@@ -31,3 +31,6 @@ BlenderのGrease Pencilのアドオン
   - 選択中のストロークの色をランダムにする
 - ストロークをアクティブレイヤーに移動(Edit Mode Only)
   - 選択中のストロークをアクティブレイヤーに移動する
+
+## License
+MIT
