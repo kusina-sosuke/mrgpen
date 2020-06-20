@@ -515,18 +515,17 @@ class MRGPEN_PT_view_3d_label(bpy.types.Panel):
         mode = context.mode
 
         o = layout.operator
+        layers = context.active_object.data.layers
 
         o(MRGPEN_OT_create_layer.bl_idname,
             text=pgt("Add New Layer"))
 
+        layout.split()
+        if layout.active:
+            layout.prop(layers.active, "info", text="Active")
+
         if mode in {"EDIT_GPENCIL", "SCULPT_GPENCIL"}:
             # エディットモードのときだけ表示
-            layers = context.active_object.data.layers
-
-            layout.split()
-            if layout.active:
-                layout.prop(layers.active, "info", text="Active")
-
             for x in gen_selected_points(layers):
                 layout.split()
                 layout.prop(x["layer"], "info", text="Stroke")
