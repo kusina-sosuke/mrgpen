@@ -39,6 +39,8 @@ translation_dict = {
             "ストロークのマテリアルを固定",
         ("*", "Isolate Lock Stroke Material"):
             "ストロークのマテリアル以外を固定",
+        ("*", "Deselect All Strokes"):
+            "全てのストロークの選択解除",
     },
     "en_US": {
         ("*", "Create New Layer"):
@@ -69,6 +71,8 @@ translation_dict = {
             "Lock Stroke Material",
         ("*", "Isolate Lock Stroke Material"):
             "Isolate Lock Stroke Material",
+        ("*", "Deselect All Strokes"):
+            "Deselect All Strokes",
     },
 }
 
@@ -476,6 +480,28 @@ class MRGPEN_OT_set_random_tint_color(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class MRGPEN_OT_deselect_all_strokes(bpy.types.Operator):
+    """非表示・固定も含めた全てのストロークの選択を解除する"""
+    bl_idname = "mrgpen.deselect_all_strokes"
+    bl_label = "Deselect All Strokes"
+
+    def execute(self, context):
+        obj = context.active_object
+        data = obj.data
+
+        # Grease Pencil
+        if not obj and obj.type == "GPENCIL":
+            return {'FINISHED'}
+
+        layers = data.layers
+
+        # 選択中レイヤーを非選択にする
+        for x in gen_selected_strokes(layers):
+            x["stroke"].select = False
+
+        return {'FINISHED'}
+
+
 class MRGPEN_PT_view_3d_label(bpy.types.Panel):
     """3D画面横のパネルのUI"""
     bl_space_type = "VIEW_3D"
@@ -505,6 +531,8 @@ class MRGPEN_PT_view_3d_label(bpy.types.Panel):
                     text=pgt("Select Stroke Layer"))
                 o(MRGPEN_OT_select_same_layer_stroke.bl_idname,
                     text=pgt("Select Same Layer Stroke"))
+                o(MRGPEN_OT_deselect_all_strokes.bl_idname,
+                    text=pgt("Deselect All Strokes"))
                 o(MRGPEN_OT_move_active_layer.bl_idname,
                     text=pgt("Move Active Layer"))
 
@@ -556,6 +584,7 @@ classes = [
     MRGPEN_OT_toggle_hide_material_other,
     MRGPEN_OT_toggle_lock_material,
     MRGPEN_OT_toggle_lock_material_other,
+    MRGPEN_OT_deselect_all_strokes,
 ]
 
 def register():
