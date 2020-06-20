@@ -41,6 +41,8 @@ translation_dict = {
             "ストロークのマテリアル以外を固定",
         ("*", "Deselect All Strokes"):
             "全てのストロークの選択解除",
+        ("*", "No Selected Stroke."):
+            "ストロークが選択させていません",
     },
     "en_US": {
         ("*", "Create New Layer"):
@@ -73,6 +75,8 @@ translation_dict = {
             "Isolate Lock Stroke Material",
         ("*", "Deselect All Strokes"):
             "Deselect All Strokes",
+        ("*", "No Selected Stroke."):
+            "No Selected Stroke.",
     },
 }
 
@@ -564,6 +568,8 @@ class MRGPEN_PT_view_3d_label(bpy.types.Panel):
                 o(MRGPEN_OT_mask_layer.bl_idname,
                     text=pgt("Add Stroke Mask"))
                 break
+            else:
+                layout.label(text=pgt("No Selected Stroke."))
 
     @classmethod
     def poll(self, context):
