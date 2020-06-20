@@ -31,6 +31,8 @@ translation_dict = {
             "ストロークをアクティブレイヤーに移動",
         ("*", "Select Same Layer Stroke"):
             "選択中のストロークと同じレイヤーのストロークを選択する",
+        ("*", "Hide Stroke Material"):
+            "ストロークのマテリアルを隠す",
     },
     "en_US": {
         ("*", "Create New Layer"):
@@ -53,6 +55,8 @@ translation_dict = {
             "Move Active Layer",
         ("*", "Select Same Layer Stroke"):
             "Select Same Layer Stroke",
+        ("*", "Hide Stroke Material"):
+            "Hide Stroke Material",
     },
 }
 
@@ -237,6 +241,34 @@ class MRGPEN_OT_toggle_lock_other(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class MRGPEN_OT_toggle_hide_material(bpy.types.Operator):
+    """選択中のストロークのマテリアルの表示・非表示を切り替える"""
+    bl_idname = "mrgpen.toggle_hide_material"
+    bl_label = "Hide Stroke Material"
+
+    def execute(self, context):
+        obj = context.active_object
+        data = obj.data
+
+        # Grease Pencil
+        if not obj and obj.type == "GPENCIL":
+            return {'FINISHED'}
+
+        layers = data.layers
+        selected_stroke_list = [x["stroke"] for x in gen_selected_strokes(layers)]
+        selected_material_index_list = list({x.material_index for x in selected_stroke_list})
+
+        material_slots = obj.material_slots
+
+        selected_stroke_material_list = [material_slots[x] for x in selected_material_index_list]
+
+        r = all(x.material.grease_pencil.hide for x in selected_stroke_material_list)
+        for x in selected_stroke_material_list:
+            x.material.grease_pencil.hide = not r
+
+        return {'FINISHED'}
+
+
 class MRGPEN_OT_move_active_layer(bpy.types.Operator):
     """選択中のストロークをアクティブレイヤーに移動する"""
     bl_idname = "mrgpen.move_active_layer"
@@ -366,6 +398,8 @@ class MRGPEN_PT_view_3d_label(bpy.types.Panel):
                     text=pgt("Lock Stroke Layer"))
                 o(MRGPEN_OT_toggle_lock_other.bl_idname,
                     text=pgt("Isolate Lock Stroke Layer"))
+                o(MRGPEN_OT_toggle_hide_material.bl_idname,
+                    text=pgt("Hide Stroke Material"))
                 o(MRGPEN_OT_set_random_tint_color.bl_idname,
                     text=pgt("Set Random Tint Stroke"))
                 o(MRGPEN_OT_move_active_layer.bl_idname,
@@ -389,6 +423,7 @@ classes = [
     MRGPEN_OT_set_random_tint_color,
     MRGPEN_PT_view_3d_label,
     MRGPEN_OT_select_same_layer_stroke,
+    MRGPEN_OT_toggle_hide_material,
 ]
 
 def register():
