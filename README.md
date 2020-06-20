@@ -15,33 +15,33 @@ BlenderのGrease Pencilのアドオン
 ## 機能
 - 新しいレイヤーを作成
   - アクティブレイヤーの名前で新しいレイヤーを作成する
-- ストロークのレイヤーを選択(Edit Mode Only)
+- ストロークのレイヤーを選択(Edit,Scupt Mode Only)
   - 選択中のストロークのレイヤーを選択する
 - 全てのストロークの選択解除
   - 非表示・固定されたレイヤー・マテリアルのストロークも全て解除する
-- ストロークのレイヤーをマスク(Edit Mode Only)
+- ストロークのレイヤーをマスク(Edit,Scupt Mode Only)
   - アクティブレイヤーに選択中のストロークのレイヤーのマスクを追加する
-- 選択中のストロークと同じレイヤーのストロークを選択する(Edit Mode Only)
+- 選択中のストロークと同じレイヤーのストロークを選択する(Edit,Scupt Mode Only)
   - 選択中のストロークと同じレイヤーのストロークを全て選択する
-- ストロークのレイヤーを隠す(Edit Mode Only)
+- ストロークのレイヤーを隠す(Edit,Scupt Mode Only)
   - 選択中のストロークのレイヤーを隠す
-- ストロークのレイヤー以外を表示(Edit Mode Only)
+- ストロークのレイヤー以外を表示(Edit,Scupt Mode Only)
   - 選択中のストロークのレイヤー以外のレイヤーを隠す
-- ストロークのレイヤーを固定(Edit Mode Only)
+- ストロークのレイヤーを固定(Edit,Scupt Mode Only)
   - 選択中のストロークのレイヤーを固定する
-- ストロークのレイヤー以外を固定(Edit Mode Only)
+- ストロークのレイヤー以外を固定(Edit,Scupt Mode Only)
   - 選択中のストロークのレイヤー以外を固定する
-- ストロークのマテリアルを隠す(Edit Mode Only)
+- ストロークのマテリアルを隠す(Edit,Scupt Mode Only)
   - 選択中のストロークのマテリアルを隠す
-- ストロークのマテリアル以外を隠す(Edit Mode Only)
+- ストロークのマテリアル以外を隠す(Edit,Scupt Mode Only)
   - 選択中じゃないストロークのマテリアルを隠す
-- ストロークのマテリアルを固定する(Edit Mode Only)
+- ストロークのマテリアルを固定する(Edit,Scupt Mode Only)
   - 選択中のストロークのマテリアルを固定する
-- ストロークのマテリアル以外を固定する(Edit Mode Only)
+- ストロークのマテリアル以外を固定する(Edit,Scupt Mode Only)
   - 選択中じゃないストロークのマテリアルを固定する
-- ストロークの色をランダム化(Edit Mode Only)
+- ストロークの色をランダム化(Edit,Scupt Mode Only)
   - 選択中のストロークの色をランダムにする
-- ストロークをアクティブレイヤーに移動(Edit Mode Only)
+- ストロークをアクティブレイヤーに移動(Edit,Scupt Mode Only)
   - 選択中のストロークをアクティブレイヤーに移動する
 
 ## License

@@ -519,7 +519,7 @@ class MRGPEN_PT_view_3d_label(bpy.types.Panel):
         o(MRGPEN_OT_create_layer.bl_idname,
             text=pgt("Add New Layer"))
 
-        if mode == "EDIT_GPENCIL":
+        if mode in {"EDIT_GPENCIL", "SCULPT_GPENCIL"}:
             # エディットモードのときだけ表示
             layers = context.active_object.data.layers
 
