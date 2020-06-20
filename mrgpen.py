@@ -35,6 +35,8 @@ translation_dict = {
             "ストロークのマテリアルを隠す",
         ("*", "Isolate Stroke Material"):
             "ストロークのマテリアル以外を隠す",
+        ("*", "Lock Stroke Material"):
+            "ストロークのマテリアルを固定",
         ("*", "Isolate Lock Stroke Material"):
             "ストロークのマテリアル以外を固定",
     },
@@ -63,6 +65,8 @@ translation_dict = {
             "Hide Stroke Material",
         ("*", "Isolate Stroke Material"):
             "Isolate Stroke Material",
+        ("*", "Lock Stroke Material"):
+            "Lock Stroke Material",
         ("*", "Isolate Lock Stroke Material"):
             "Isolate Lock Stroke Material",
     },
@@ -315,6 +319,34 @@ class MRGPEN_OT_toggle_hide_material_other(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class MRGPEN_OT_toggle_lock_material(bpy.types.Operator):
+    """選択中のストロークのマテリアルの固定・非固定を切り替える"""
+    bl_idname = "mrgpen.toggle_lock_material"
+    bl_label = "Lock Stroke Material"
+
+    def execute(self, context):
+        obj = context.active_object
+        data = obj.data
+
+        # Grease Pencil
+        if not obj and obj.type == "GPENCIL":
+            return {'FINISHED'}
+
+        layers = data.layers
+        selected_stroke_list = [x["stroke"] for x in gen_selected_strokes(layers)]
+        selected_material_index_list = list({x.material_index for x in selected_stroke_list})
+
+        material_slots = obj.material_slots
+
+        selected_stroke_material_list = [material_slots[x] for x in selected_material_index_list]
+
+        r = all(x.material.grease_pencil.lock for x in selected_stroke_material_list)
+        for x in selected_stroke_material_list:
+            x.material.grease_pencil.lock = not r
+
+        return {'FINISHED'}
+
+
 class MRGPEN_OT_toggle_lock_material_other(bpy.types.Operator):
     """選択中じゃないストロークのマテリアルの固定・非固定を切り替える"""
     bl_idname = "mrgpen.toggle_lock_material_other"
@@ -486,6 +518,8 @@ class MRGPEN_PT_view_3d_label(bpy.types.Panel):
                     text=pgt("Hide Stroke Material"))
                 o(MRGPEN_OT_toggle_hide_material_other.bl_idname,
                     text=pgt("Isolate Stroke Material"))
+                o(MRGPEN_OT_toggle_lock_material.bl_idname,
+                    text=pgt("Lock Stroke Material"))
                 o(MRGPEN_OT_toggle_lock_material_other.bl_idname,
                     text=pgt("Isolate Lock Stroke Material"))
                 o(MRGPEN_OT_set_random_tint_color.bl_idname,
@@ -513,6 +547,7 @@ classes = [
     MRGPEN_OT_select_same_layer_stroke,
     MRGPEN_OT_toggle_hide_material,
     MRGPEN_OT_toggle_hide_material_other,
+    MRGPEN_OT_toggle_lock_material,
     MRGPEN_OT_toggle_lock_material_other,
 ]
 
