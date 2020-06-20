@@ -523,10 +523,13 @@ class MRGPEN_PT_view_3d_label(bpy.types.Panel):
             # エディットモードのときだけ表示
             layers = context.active_object.data.layers
 
+            layout.split()
+            if layout.active:
+                layout.prop(layers.active, "info", text="Active")
+
             for x in gen_selected_points(layers):
                 layout.split()
                 layout.prop(x["layer"], "info", text="Stroke")
-                layout.prop(layers.active, "info", text="Active")
                 o(MRGPEN_OT_select_layer.bl_idname,
                     text=pgt("Select Stroke Layer"))
                 o(MRGPEN_OT_select_same_layer_stroke.bl_idname,
