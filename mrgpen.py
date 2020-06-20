@@ -35,6 +35,8 @@ translation_dict = {
             "ストロークのマテリアルを隠す",
         ("*", "Isolate Stroke Material"):
             "ストロークのマテリアル以外を隠す",
+        ("*", "Isolate Lock Stroke Material"):
+            "ストロークのマテリアル以外を固定",
     },
     "en_US": {
         ("*", "Create New Layer"):
@@ -61,6 +63,8 @@ translation_dict = {
             "Hide Stroke Material",
         ("*", "Isolate Stroke Material"):
             "Isolate Stroke Material",
+        ("*", "Isolate Lock Stroke Material"):
+            "Isolate Lock Stroke Material",
     },
 }
 
@@ -311,6 +315,44 @@ class MRGPEN_OT_toggle_hide_material_other(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class MRGPEN_OT_toggle_lock_material_other(bpy.types.Operator):
+    """選択中じゃないストロークのマテリアルの固定・非固定を切り替える"""
+    bl_idname = "mrgpen.toggle_lock_material_other"
+    bl_label = "Isolate Lock Stroke Material"
+
+    def execute(self, context):
+        obj = context.active_object
+        data = obj.data
+
+        # Grease Pencil
+        if not obj and obj.type == "GPENCIL":
+            return {'FINISHED'}
+
+        layers = data.layers
+        selected_stroke_list = [x["stroke"] for x in gen_selected_strokes(layers)]
+        selected_material_index_sets = {x.material_index for x in selected_stroke_list}
+
+        material_slots = obj.material_slots
+
+        selected_stroke_material_list = [material_slots[x] for x in list(selected_material_index_sets)]
+        other_stroke_material_list = [
+            y
+            for y in (
+                x
+                for i, x in enumerate(material_slots)
+                if i not in selected_material_index_sets
+            )
+            if hasattr(y.material, 'grease_pencil')
+            and y.material.grease_pencil
+        ]
+
+        r = all(x.material.grease_pencil.lock for x in other_stroke_material_list)
+        for x in other_stroke_material_list:
+            x.material.grease_pencil.lock = not r
+
+        return {'FINISHED'}
+
+
 class MRGPEN_OT_move_active_layer(bpy.types.Operator):
     """選択中のストロークをアクティブレイヤーに移動する"""
     bl_idname = "mrgpen.move_active_layer"
@@ -444,6 +486,8 @@ class MRGPEN_PT_view_3d_label(bpy.types.Panel):
                     text=pgt("Hide Stroke Material"))
                 o(MRGPEN_OT_toggle_hide_material_other.bl_idname,
                     text=pgt("Isolate Stroke Material"))
+                o(MRGPEN_OT_toggle_lock_material_other.bl_idname,
+                    text=pgt("Isolate Lock Stroke Material"))
                 o(MRGPEN_OT_set_random_tint_color.bl_idname,
                     text=pgt("Set Random Tint Stroke"))
                 o(MRGPEN_OT_move_active_layer.bl_idname,
@@ -469,6 +513,7 @@ classes = [
     MRGPEN_OT_select_same_layer_stroke,
     MRGPEN_OT_toggle_hide_material,
     MRGPEN_OT_toggle_hide_material_other,
+    MRGPEN_OT_toggle_lock_material_other,
 ]
 
 def register():
