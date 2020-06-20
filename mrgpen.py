@@ -29,6 +29,8 @@ translation_dict = {
             "ストロークの色をランダム化",
         ("*", "Move Active Layer"):
             "ストロークをアクティブレイヤーに移動",
+        ("*", "Select Same Layer Stroke"):
+            "選択中のストロークと同じレイヤーのストロークを選択する",
     },
     "en_US": {
         ("*", "Create New Layer"):
@@ -49,6 +51,8 @@ translation_dict = {
             "Set Random Tint Stroke",
         ("*", "Move Active Layer"):
             "Move Active Layer",
+        ("*", "Select Same Layer Stroke"):
+            "Select Same Layer Stroke",
     },
 }
 
@@ -105,6 +109,35 @@ class MRGPEN_OT_select_layer(bpy.types.Operator):
         # 先頭1件をアクティブにする
         for x in gen_selected_points(layers):
             layers.active = x["layer"]
+            break
+
+        return {'FINISHED'}
+
+
+class MRGPEN_OT_select_same_layer_stroke(bpy.types.Operator):
+    """選択中のストロークと同じレイヤーのストロークを全て選択する"""
+    bl_idname = "mrgpen.select_same_layer_stroke"
+    bl_label = "Select_Same_Layer_Stroke"
+
+    def execute(self, context):
+        obj = context.active_object
+        data = obj.data
+
+        # Grease Pencil
+        if not obj and obj.type == "GPENCIL":
+            return {'FINISHED'}
+
+        layers = data.layers
+
+        for selected_stroke in gen_selected_strokes(layers):
+            strokes = (
+                s
+                for f in selected_stroke['layer'].frames
+                for s in f.strokes
+            )
+            for s in strokes:
+                s.select = True
+
             break
 
         return {'FINISHED'}
@@ -323,6 +356,8 @@ class MRGPEN_PT_view_3d_label(bpy.types.Panel):
                     text=pgt("Select Stroke Layer"))
                 o(MRGPEN_OT_mask_layer.bl_idname,
                     text=pgt("Add Stroke Mask"))
+                o(MRGPEN_OT_select_same_layer_stroke.bl_idname,
+                    text=pgt("Select Same Layer Stroke"))
                 o(MRGPEN_OT_toggle_hide.bl_idname,
                     text=pgt("Hide Stroke Layer"))
                 o(MRGPEN_OT_toggle_hide_other.bl_idname,
@@ -353,6 +388,7 @@ classes = [
     MRGPEN_OT_move_active_layer,
     MRGPEN_OT_set_random_tint_color,
     MRGPEN_PT_view_3d_label,
+    MRGPEN_OT_select_same_layer_stroke,
 ]
 
 def register():
