@@ -498,14 +498,17 @@ class MRGPEN_PT_view_3d_label(bpy.types.Panel):
             layers = context.active_object.data.layers
 
             for x in gen_selected_points(layers):
+                layout.split()
                 layout.prop(x["layer"], "info", text="Stroke")
                 layout.prop(layers.active, "info", text="Active")
                 o(MRGPEN_OT_select_layer.bl_idname,
                     text=pgt("Select Stroke Layer"))
-                o(MRGPEN_OT_mask_layer.bl_idname,
-                    text=pgt("Add Stroke Mask"))
                 o(MRGPEN_OT_select_same_layer_stroke.bl_idname,
                     text=pgt("Select Same Layer Stroke"))
+                o(MRGPEN_OT_move_active_layer.bl_idname,
+                    text=pgt("Move Active Layer"))
+
+                layout.split()
                 o(MRGPEN_OT_toggle_hide.bl_idname,
                     text=pgt("Hide Stroke Layer"))
                 o(MRGPEN_OT_toggle_hide_other.bl_idname,
@@ -514,6 +517,8 @@ class MRGPEN_PT_view_3d_label(bpy.types.Panel):
                     text=pgt("Lock Stroke Layer"))
                 o(MRGPEN_OT_toggle_lock_other.bl_idname,
                     text=pgt("Isolate Lock Stroke Layer"))
+
+                layout.split()
                 o(MRGPEN_OT_toggle_hide_material.bl_idname,
                     text=pgt("Hide Stroke Material"))
                 o(MRGPEN_OT_toggle_hide_material_other.bl_idname,
@@ -522,10 +527,12 @@ class MRGPEN_PT_view_3d_label(bpy.types.Panel):
                     text=pgt("Lock Stroke Material"))
                 o(MRGPEN_OT_toggle_lock_material_other.bl_idname,
                     text=pgt("Isolate Lock Stroke Material"))
+
+                layout.split()
                 o(MRGPEN_OT_set_random_tint_color.bl_idname,
                     text=pgt("Set Random Tint Stroke"))
-                o(MRGPEN_OT_move_active_layer.bl_idname,
-                    text=pgt("Move Active Layer"))
+                o(MRGPEN_OT_mask_layer.bl_idname,
+                    text=pgt("Add Stroke Mask"))
                 break
 
     @classmethod
