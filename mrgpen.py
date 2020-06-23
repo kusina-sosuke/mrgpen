@@ -27,6 +27,8 @@ translation_dict = {
             "ストロークのレイヤー以外を固定",
         ("*", "Set Random Tint Stroke"):
             "ストロークの色をランダム化",
+        ("*", "Set Random Tint Brush"):
+            "ブラシの色をランダム化",
         ("*", "Move Active Layer"):
             "ストロークをアクティブレイヤーに移動",
         ("*", "Select Same Layer Stroke"):
@@ -61,6 +63,8 @@ translation_dict = {
             "Isolate Lock Stroke Layer",
         ("*", "Set Random Tint Stroke"):
             "Set Random Tint Stroke",
+        ("*", "Set Random Tint Brush"):
+            "Set Random Tint Brush",
         ("*", "Move Active Layer"):
             "Move Active Layer",
         ("*", "Select Same Layer Stroke"):
@@ -484,6 +488,28 @@ class MRGPEN_OT_set_random_tint_color(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class MRGPEN_OT_set_random_tint_color_brush(bpy.types.Operator):
+    """ブラシにランダムな色を設定する"""
+    bl_idname = "mrgpen.set_random_tint_color_brush"
+    bl_label = "Set Random Tint Brush"
+
+    def execute(self, context):
+        obj = context.active_object
+        data = obj.data
+
+        # Grease Pencil
+        if not obj and obj.type == "GPENCIL":
+            return {'FINISHED'}
+
+        layers = data.layers
+
+        vertex_color = (random(), random(), random())
+
+        bpy.context.tool_settings.gpencil_paint.brush.color = vertex_color
+
+        return {'FINISHED'}
+
+
 class MRGPEN_OT_deselect_all_strokes(bpy.types.Operator):
     """非表示・固定も含めた全てのストロークの選択を解除する"""
     bl_idname = "mrgpen.deselect_all_strokes"
@@ -571,6 +597,11 @@ class MRGPEN_PT_view_3d_label(bpy.types.Panel):
             else:
                 layout.label(text=pgt("No Selected Stroke."))
 
+        if mode in {"PAINT_GPENCIL",}:
+            layout.split()
+            o(MRGPEN_OT_set_random_tint_color_brush.bl_idname,
+                text=pgt("Set Random Tint Brush"))
+
     @classmethod
     def poll(self, context):
         o = context.active_object
@@ -586,6 +617,7 @@ classes = [
     MRGPEN_OT_toggle_lock_other,
     MRGPEN_OT_move_active_layer,
     MRGPEN_OT_set_random_tint_color,
+    MRGPEN_OT_set_random_tint_color_brush,
     MRGPEN_PT_view_3d_label,
     MRGPEN_OT_select_same_layer_stroke,
     MRGPEN_OT_toggle_hide_material,
