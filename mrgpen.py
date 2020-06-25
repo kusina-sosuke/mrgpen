@@ -547,60 +547,89 @@ class MRGPEN_PT_view_3d_label(bpy.types.Panel):
         o = layout.operator
         layers = context.active_object.data.layers
 
-        o(MRGPEN_OT_create_layer.bl_idname,
-            text=pgt("Add New Layer"))
+        is_selected = False
+        layer = None
+        for x in gen_selected_points(layers):
+            layer = x["layer"];
+            is_selected = True
+            break
 
-        layout.split()
+        # 特定のモードかどうか
+        is_editable = mode in {"EDIT_GPENCIL", "SCULPT_GPENCIL"}
+        is_paintable = mode in {"PAINT_GPENCIL",}
+
+        # レイヤー関係の機能
         if layout.active:
             layout.prop(layers.active, "info", text="Active")
 
-        if mode in {"EDIT_GPENCIL", "SCULPT_GPENCIL"}:
-            # エディットモードのときだけ表示
-            for x in gen_selected_points(layers):
-                layout.split()
-                layout.prop(x["layer"], "info", text="Stroke")
-                o(MRGPEN_OT_select_layer.bl_idname,
-                    text=pgt("Select Stroke Layer"))
-                o(MRGPEN_OT_select_same_layer_stroke.bl_idname,
-                    text=pgt("Select Same Layer Stroke"))
-                o(MRGPEN_OT_deselect_all_strokes.bl_idname,
-                    text=pgt("Deselect All Strokes"))
-                o(MRGPEN_OT_move_active_layer.bl_idname,
-                    text=pgt("Move Active Layer"))
+        if is_selected and is_editable:
+            layout.prop(layer, "info", text="Stroke")
 
-                layout.split()
-                o(MRGPEN_OT_toggle_hide.bl_idname,
-                    text=pgt("Hide Stroke Layer"))
-                o(MRGPEN_OT_toggle_hide_other.bl_idname,
-                    text=pgt("Isolate Stroke Layer"))
-                o(MRGPEN_OT_toggle_lock.bl_idname,
-                    text=pgt("Lock Stroke Layer"))
-                o(MRGPEN_OT_toggle_lock_other.bl_idname,
-                    text=pgt("Isolate Lock Stroke Layer"))
+        box = layout.box()
+        box.label(text="Layer")
+        box.operator(MRGPEN_OT_create_layer.bl_idname,
+            text=pgt("Add New Layer"))
+        if is_editable and is_selected:
+            box.operator(MRGPEN_OT_move_active_layer.bl_idname,
+                text=pgt("Move Active Layer"))
 
-                layout.split()
-                o(MRGPEN_OT_toggle_hide_material.bl_idname,
-                    text=pgt("Hide Stroke Material"))
-                o(MRGPEN_OT_toggle_hide_material_other.bl_idname,
-                    text=pgt("Isolate Stroke Material"))
-                o(MRGPEN_OT_toggle_lock_material.bl_idname,
-                    text=pgt("Lock Stroke Material"))
-                o(MRGPEN_OT_toggle_lock_material_other.bl_idname,
-                    text=pgt("Isolate Lock Stroke Material"))
+        # 選択関係の機能
+        if is_editable and is_selected:
+            box = layout.box()
+            bo = box.operator
+            box.label(text="Select")
+            bo(MRGPEN_OT_select_layer.bl_idname,
+                text=pgt("Select Stroke Layer"))
+            bo(MRGPEN_OT_select_same_layer_stroke.bl_idname, text=pgt("Select Same Layer Stroke"))
+            bo(MRGPEN_OT_deselect_all_strokes.bl_idname,
+                text=pgt("Deselect All Strokes"))
 
-                layout.split()
-                o(MRGPEN_OT_set_random_tint_color.bl_idname,
+        # ストロークのレイヤー関係の機能
+        if is_editable and is_selected:
+            box = layout.box()
+            bo = box.operator
+            box.label(text="Stroke Layer")
+            bo(MRGPEN_OT_toggle_hide.bl_idname,
+                text=pgt("Hide Stroke Layer"))
+            bo(MRGPEN_OT_toggle_hide_other.bl_idname,
+                text=pgt("Isolate Stroke Layer"))
+            bo(MRGPEN_OT_toggle_lock.bl_idname,
+                text=pgt("Lock Stroke Layer"))
+            bo(MRGPEN_OT_toggle_lock_other.bl_idname,
+                text=pgt("Isolate Lock Stroke Layer"))
+
+        # ストロークのマテリアル関係の機能
+        if is_editable and is_selected:
+            box = layout.box()
+            bo = box.operator
+            box.label(text="Stroke Material")
+            bo(MRGPEN_OT_toggle_hide_material.bl_idname,
+                text=pgt("Hide Stroke Material"))
+            bo(MRGPEN_OT_toggle_hide_material_other.bl_idname,
+                text=pgt("Isolate Stroke Material"))
+            bo(MRGPEN_OT_toggle_lock_material.bl_idname,
+                text=pgt("Lock Stroke Material"))
+            bo(MRGPEN_OT_toggle_lock_material_other.bl_idname,
+                text=pgt("Isolate Lock Stroke Material"))
+
+        # その他の機能
+        if (is_editable and is_selected) or is_paintable:
+            box = layout.box()
+            bo = box.operator
+            box.label(text="Other")
+
+            if is_editable:
+                bo(MRGPEN_OT_set_random_tint_color.bl_idname,
                     text=pgt("Set Random Tint Stroke"))
-                o(MRGPEN_OT_mask_layer.bl_idname,
+                bo(MRGPEN_OT_mask_layer.bl_idname,
                     text=pgt("Add Stroke Mask"))
-                break
-            else:
-                layout.label(text=pgt("No Selected Stroke."))
 
-        if mode in {"PAINT_GPENCIL",}:
-            layout.split()
-            o(MRGPEN_OT_set_random_tint_color_brush.bl_idname,
-                text=pgt("Set Random Tint Brush"))
+            if is_paintable:
+                bo(MRGPEN_OT_set_random_tint_color_brush.bl_idname,
+                    text=pgt("Set Random Tint Brush"))
+
+        if is_editable and not is_selected:
+            layout.label(text=pgt("No Selected Stroke."))
 
     @classmethod
     def poll(self, context):
