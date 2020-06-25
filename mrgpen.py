@@ -2,7 +2,8 @@ import bpy
 from bpy.app import translations
 from bpy.app.translations import pgettext as pgt
 from random import random
-from bpy.props import StringProperty, EnumProperty
+from bpy.props import StringProperty, EnumProperty, BoolProperty, PointerProperty
+from bpy.types import PropertyGroup
 
 bl_info = {
     "name": "Mr.GPen",
@@ -595,6 +596,7 @@ class MRGPEN_PT_view_3d_label(bpy.types.Panel):
         layout = self.layout
 
         mode = context.mode
+        wm = context.window_manager.mrgpen
 
         o = layout.operator
         layers = context.active_object.data.layers
@@ -621,90 +623,105 @@ class MRGPEN_PT_view_3d_label(bpy.types.Panel):
         if is_selected and is_editable:
             layout.prop(layer, "info", text="Stroke")
 
+        def submenu(layout, name, text):
+            """開閉メニューを生成"""
+            is_collapse = getattr(wm, name)
+            r = layout.row()
+            r.alignment = "LEFT"
+            r.prop(
+                wm,
+                name,
+                icon="TRIA_DOWN" if is_collapse else "TRIA_RIGHT",
+                text=text,
+                emboss=False,
+            )
+
+            return is_collapse
+
         box = layout.box()
-        box.label(text="Layer")
-        box.operator(MRGPEN_OT_create_layer.bl_idname,
-            text=pgt("Add New Layer"))
-        if is_editable and is_selected:
-            box.operator(MRGPEN_OT_move_active_layer.bl_idname,
-                text=pgt("Move Active Layer"))
+        if submenu(box, "is_collapse_layer", "Layer"):
+            box.operator(MRGPEN_OT_create_layer.bl_idname,
+                text=pgt("Add New Layer"))
+            if is_editable and is_selected:
+                box.operator(MRGPEN_OT_move_active_layer.bl_idname,
+                    text=pgt("Move Active Layer"))
 
         # 選択関係の機能
         if is_editable and is_selected:
             box = layout.box()
-            bo = box.operator
-            box.label(text="Select")
-            bo(MRGPEN_OT_select_layer.bl_idname,
-                text=pgt("Select Stroke Layer"))
-            bo(MRGPEN_OT_select_same_layer_stroke.bl_idname, text=pgt("Select Same Layer Stroke"))
-            bo(MRGPEN_OT_deselect_all_strokes.bl_idname,
-                text=pgt("Deselect All Strokes"))
+            if submenu(box, "is_collapse_select", "Select"):
+                bo = box.operator
+                bo(MRGPEN_OT_select_layer.bl_idname,
+                    text=pgt("Select Stroke Layer"))
+                bo(MRGPEN_OT_select_same_layer_stroke.bl_idname, text=pgt("Select Same Layer Stroke"))
+                bo(MRGPEN_OT_deselect_all_strokes.bl_idname,
+                    text=pgt("Deselect All Strokes"))
 
         # ストロークのレイヤー関係の機能
         if is_editable and is_selected:
             box = layout.box()
-            bo = box.operator
-            box.label(text="Stroke Layer")
-            bo(MRGPEN_OT_toggle_hide.bl_idname,
-                text=pgt("Hide Stroke Layer"))
-            bo(MRGPEN_OT_toggle_hide_other.bl_idname,
-                text=pgt("Isolate Stroke Layer"))
-            bo(MRGPEN_OT_toggle_lock.bl_idname,
-                text=pgt("Lock Stroke Layer"))
-            bo(MRGPEN_OT_toggle_lock_other.bl_idname,
-                text=pgt("Isolate Lock Stroke Layer"))
+            if submenu(box, "is_collapse_stroke_layer", "Stroke Layer"):
+                bo = box.operator
+                bo(MRGPEN_OT_toggle_hide.bl_idname,
+                    text=pgt("Hide Stroke Layer"))
+                bo(MRGPEN_OT_toggle_hide_other.bl_idname,
+                    text=pgt("Isolate Stroke Layer"))
+                bo(MRGPEN_OT_toggle_lock.bl_idname,
+                    text=pgt("Lock Stroke Layer"))
+                bo(MRGPEN_OT_toggle_lock_other.bl_idname,
+                    text=pgt("Isolate Lock Stroke Layer"))
 
         # ストロークのマテリアル関係の機能
         if is_editable and is_selected:
             box = layout.box()
-            bo = box.operator
-            box.label(text="Stroke Material")
-            bo(MRGPEN_OT_toggle_hide_material.bl_idname,
-                text=pgt("Hide Stroke Material"))
-            bo(MRGPEN_OT_toggle_hide_material_other.bl_idname,
-                text=pgt("Isolate Stroke Material"))
-            bo(MRGPEN_OT_toggle_lock_material.bl_idname,
-                text=pgt("Lock Stroke Material"))
-            bo(MRGPEN_OT_toggle_lock_material_other.bl_idname,
-                text=pgt("Isolate Lock Stroke Material"))
+            if submenu(box, "is_collapse_stroke_material", "Stroke Material"):
+                bo = box.operator
+                bo(MRGPEN_OT_toggle_hide_material.bl_idname,
+                    text=pgt("Hide Stroke Material"))
+                bo(MRGPEN_OT_toggle_hide_material_other.bl_idname,
+                    text=pgt("Isolate Stroke Material"))
+                bo(MRGPEN_OT_toggle_lock_material.bl_idname,
+                    text=pgt("Lock Stroke Material"))
+                bo(MRGPEN_OT_toggle_lock_material_other.bl_idname,
+                    text=pgt("Isolate Lock Stroke Material"))
 
         # 頂点色関係の機能
         if (is_editable and is_selected) or is_paintable:
             box = layout.box()
-            bo = box.operator
+            if submenu(box, "is_collapse_vertex_color", "Vertex Color"):
+                bo = box.operator
 
-            box.label(text="Vertex Color")
-            box.prop(bpy.context.tool_settings.gpencil_paint.brush, "color", text="Brush Color")
+                box.prop(bpy.context.tool_settings.gpencil_paint.brush, "color", text="Brush Color")
 
-            # 選択中のストロークの頂点色を表示
-            if is_selected:
-                box.prop(point, "vertex_color")
-                box.prop(stroke, "vertex_color_fill")
+                # 選択中のストロークの頂点色を表示
+                if is_selected:
+                    box.prop(point, "vertex_color")
+                    box.prop(stroke, "vertex_color_fill")
 
-                pick_vertex_color = bo(MRGPEN_OT_pick_vertex_color.bl_idname,
-                    text=pgt("Pick Vertex Stroke Color"),
-                    )
-                pick_vertex_color.type = "STROKE"
+                    pick_vertex_color = bo(MRGPEN_OT_pick_vertex_color.bl_idname,
+                        text=pgt("Pick Vertex Stroke Color"),
+                        )
+                    pick_vertex_color.type = "STROKE"
 
-                pick_vertex_color = bo(MRGPEN_OT_pick_vertex_color.bl_idname,
-                    text=pgt("Pick Vertex Fill Color"),
-                    )
-                pick_vertex_color.type = "FILL"
+                    pick_vertex_color = bo(MRGPEN_OT_pick_vertex_color.bl_idname,
+                        text=pgt("Pick Vertex Fill Color"),
+                        )
+                    pick_vertex_color.type = "FILL"
 
-                bo(MRGPEN_OT_set_random_tint_color.bl_idname,
-                    text=pgt("Set Random Tint Stroke"))
+                    bo(MRGPEN_OT_set_random_tint_color.bl_idname,
+                        text=pgt("Set Random Tint Stroke"))
 
-            bo(MRGPEN_OT_set_random_tint_color_brush.bl_idname,
-                text=pgt("Set Random Tint Brush"))
+                bo(MRGPEN_OT_set_random_tint_color_brush.bl_idname,
+                    text=pgt("Set Random Tint Brush"))
 
         # その他の機能
         if is_editable and is_selected:
             box = layout.box()
-            bo = box.operator
-            box.label(text="Other")
+            if submenu(box, "is_collapse_other", "Other"):
+                bo = box.operator
 
-            bo(MRGPEN_OT_mask_layer.bl_idname,
-                text=pgt("Add Stroke Mask"))
+                bo(MRGPEN_OT_mask_layer.bl_idname,
+                    text=pgt("Add Stroke Mask"))
 
         if is_editable and not is_selected:
             layout.label(text=pgt("No Selected Stroke."))
@@ -713,6 +730,15 @@ class MRGPEN_PT_view_3d_label(bpy.types.Panel):
     def poll(self, context):
         o = context.active_object
         return (o and o.type == "GPENCIL")
+
+class MRGPEN_WindowManager(PropertyGroup):
+    is_collapse_layer: BoolProperty(default=True)
+    is_collapse_select: BoolProperty(default=True)
+    is_collapse_stroke_layer: BoolProperty(default=True)
+    is_collapse_stroke_material: BoolProperty(default=True)
+    is_collapse_vertex_color: BoolProperty(default=True)
+    is_collapse_other: BoolProperty(default=True)
+
 
 classes = [
     MRGPEN_OT_select_layer,
@@ -733,6 +759,7 @@ classes = [
     MRGPEN_OT_toggle_lock_material_other,
     MRGPEN_OT_deselect_all_strokes,
     MRGPEN_OT_pick_vertex_color,
+    MRGPEN_WindowManager,
 ]
 
 def register():
@@ -740,6 +767,7 @@ def register():
         bpy.utils.register_class(x)
 
     translations.register(__name__, translation_dict)
+    bpy.types.WindowManager.mrgpen = PointerProperty(type=MRGPEN_WindowManager)
 
 
 def unregister():
@@ -748,6 +776,7 @@ def unregister():
     for x in classes:
         bpy.utils.unregister_class(x)
 
+    del bpy.types.WindowManager.mrgpen
 
 if __name__ == "__main__":
     register()
