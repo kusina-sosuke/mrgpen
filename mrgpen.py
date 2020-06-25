@@ -664,15 +664,16 @@ class MRGPEN_PT_view_3d_label(bpy.types.Panel):
             bo(MRGPEN_OT_toggle_lock_material_other.bl_idname,
                 text=pgt("Isolate Lock Stroke Material"))
 
-        # その他の機能
+        # 頂点色関係の機能
         if (is_editable and is_selected) or is_paintable:
             box = layout.box()
             bo = box.operator
-            box.label(text="Other")
+            box.label(text="Vertex Color")
 
             if is_editable:
                 bo(MRGPEN_OT_set_random_tint_color.bl_idname,
                     text=pgt("Set Random Tint Stroke"))
+
                 pick_vertex_color = bo(MRGPEN_OT_pick_vertex_color.bl_idname,
                     text=pgt("Pick Vertex Stroke Color"),
                     )
@@ -683,12 +684,18 @@ class MRGPEN_PT_view_3d_label(bpy.types.Panel):
                     )
                 pick_vertex_color.type = "FILL"
 
-                bo(MRGPEN_OT_mask_layer.bl_idname,
-                    text=pgt("Add Stroke Mask"))
-
             if is_paintable:
                 bo(MRGPEN_OT_set_random_tint_color_brush.bl_idname,
                     text=pgt("Set Random Tint Brush"))
+
+        # その他の機能
+        if is_editable and is_selected:
+            box = layout.box()
+            bo = box.operator
+            box.label(text="Other")
+
+            bo(MRGPEN_OT_mask_layer.bl_idname,
+                text=pgt("Add Stroke Mask"))
 
         if is_editable and not is_selected:
             layout.label(text=pgt("No Selected Stroke."))
