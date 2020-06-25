@@ -601,8 +601,12 @@ class MRGPEN_PT_view_3d_label(bpy.types.Panel):
 
         is_selected = False
         layer = None
+        stroke = None
+        point = None
         for x in gen_selected_points(layers):
             layer = x["layer"];
+            stroke = x["stroke"];
+            point = x["point"];
             is_selected = True
             break
 
@@ -668,11 +672,14 @@ class MRGPEN_PT_view_3d_label(bpy.types.Panel):
         if (is_editable and is_selected) or is_paintable:
             box = layout.box()
             bo = box.operator
-            box.label(text="Vertex Color")
 
-            if is_editable:
-                bo(MRGPEN_OT_set_random_tint_color.bl_idname,
-                    text=pgt("Set Random Tint Stroke"))
+            box.label(text="Vertex Color")
+            box.prop(bpy.context.tool_settings.gpencil_paint.brush, "color", text="Brush Color")
+
+            # 選択中のストロークの頂点色を表示
+            if is_selected:
+                box.prop(point, "vertex_color")
+                box.prop(stroke, "vertex_color_fill")
 
                 pick_vertex_color = bo(MRGPEN_OT_pick_vertex_color.bl_idname,
                     text=pgt("Pick Vertex Stroke Color"),
@@ -684,9 +691,11 @@ class MRGPEN_PT_view_3d_label(bpy.types.Panel):
                     )
                 pick_vertex_color.type = "FILL"
 
-            if is_paintable:
-                bo(MRGPEN_OT_set_random_tint_color_brush.bl_idname,
-                    text=pgt("Set Random Tint Brush"))
+                bo(MRGPEN_OT_set_random_tint_color.bl_idname,
+                    text=pgt("Set Random Tint Stroke"))
+
+            bo(MRGPEN_OT_set_random_tint_color_brush.bl_idname,
+                text=pgt("Set Random Tint Brush"))
 
         # その他の機能
         if is_editable and is_selected:
