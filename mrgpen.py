@@ -2,6 +2,7 @@ import bpy
 from bpy.app import translations
 from bpy.app.translations import pgettext as pgt
 from random import random
+from bpy.props import StringProperty, EnumProperty
 
 bl_info = {
     "name": "Mr.GPen",
@@ -45,6 +46,10 @@ translation_dict = {
             "全てのストロークの選択解除",
         ("*", "No Selected Stroke."):
             "ストロークが選択させていません",
+        ("*", "Pick Vertex Stroke Color"):
+            "ストロークの線の色を取得",
+        ("*", "Pick Vertex Fill Color"):
+            "ストロークの塗りつぶし色を取得",
     },
     "en_US": {
         ("*", "Create New Layer"):
@@ -81,6 +86,10 @@ translation_dict = {
             "Deselect All Strokes",
         ("*", "No Selected Stroke."):
             "No Selected Stroke.",
+        ("*", "Pick Vertex Stroke Color"):
+            "Pick Vertex Stroke Color",
+        ("*", "Pick Vertex Fill Color"):
+            "Pick Vertex Fill Color",
     },
 }
 
@@ -510,6 +519,49 @@ class MRGPEN_OT_set_random_tint_color_brush(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class MRGPEN_OT_pick_vertex_color(bpy.types.Operator):
+    """選択中のストロークの色をブラシに設定する"""
+    bl_idname = "mrgpen.pick_vertex_color"
+    bl_label = "Pick Vertex Color"
+
+    type: EnumProperty(
+        name="",
+        default="FILL",
+        items=[
+            ("STROKE", "Stroke", ""),
+            ("FILL", "Fill", ""),
+        ],
+    )
+
+    def execute(self, context):
+        obj = context.active_object
+        data = obj.data
+
+        # Grease Pencil
+        if not obj and obj.type == "GPENCIL":
+            return {'FINISHED'}
+
+        layers = data.layers
+
+        vertex_color = None
+        for x in gen_selected_strokes(layers):
+            stroke = x["stroke"]
+
+            if self.type == "FILL":
+                vertex_color = stroke.vertex_color_fill[:3]
+
+            elif self.type == "STROKE":
+                for y in stroke.points:
+                    vertex_color = y.vertex_color[:3]
+                    break
+            break
+
+        if vertex_color:
+            bpy.context.tool_settings.gpencil_paint.brush.color = vertex_color
+
+        return {'FINISHED'}
+
+
 class MRGPEN_OT_deselect_all_strokes(bpy.types.Operator):
     """非表示・固定も含めた全てのストロークの選択を解除する"""
     bl_idname = "mrgpen.deselect_all_strokes"
@@ -621,6 +673,16 @@ class MRGPEN_PT_view_3d_label(bpy.types.Panel):
             if is_editable:
                 bo(MRGPEN_OT_set_random_tint_color.bl_idname,
                     text=pgt("Set Random Tint Stroke"))
+                pick_vertex_color = bo(MRGPEN_OT_pick_vertex_color.bl_idname,
+                    text=pgt("Pick Vertex Stroke Color"),
+                    )
+                pick_vertex_color.type = "STROKE"
+
+                pick_vertex_color = bo(MRGPEN_OT_pick_vertex_color.bl_idname,
+                    text=pgt("Pick Vertex Fill Color"),
+                    )
+                pick_vertex_color.type = "FILL"
+
                 bo(MRGPEN_OT_mask_layer.bl_idname,
                     text=pgt("Add Stroke Mask"))
 
@@ -654,6 +716,7 @@ classes = [
     MRGPEN_OT_toggle_lock_material,
     MRGPEN_OT_toggle_lock_material_other,
     MRGPEN_OT_deselect_all_strokes,
+    MRGPEN_OT_pick_vertex_color,
 ]
 
 def register():
