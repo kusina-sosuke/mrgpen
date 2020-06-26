@@ -94,35 +94,48 @@ translation_dict = {
     },
 }
 
-def gen_selected_points(layers):
-    """選択中のポイントを返す"""
+def gen_strokes(layers):
+    """全ストロークを返す"""
     yield from (
         {
             "layer": l,
             "frame": f,
             "stroke": s,
-            "point": p,
         }
         for l in layers
         for f in l.frames
         for s in f.strokes
-        if s.select
-        for p in s.points
+    )
+
+def gen_points(layers):
+    """全ポイントを返す"""
+    yield from (
+        {
+            "point": p,
+            **s,
+        }
+        for s in gen_strokes(layers)
+        for p in s["stroke"].points
+    )
+
+def gen_selected_points(layers):
+    """選択中のポイントを返す"""
+    yield from (
+        {
+            "point": p,
+            **s,
+        }
+        for s in gen_selected_strokes(layers)
+        for p in s["stroke"].points
         if p.select
     )
 
 def gen_selected_strokes(layers):
     """選択中のストロークを返す"""
     yield from (
-        {
-            "layer": l,
-            "frame": f,
-            "stroke": s,
-        }
-        for l in layers
-        for f in l.frames
-        for s in f.strokes
-        if s.select
+        s
+        for s in gen_strokes(layers)
+        if s["stroke"].select
     )
 
 def get_selected_layers(layers):
