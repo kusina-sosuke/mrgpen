@@ -61,7 +61,7 @@ translation_dict = {
         ("*", "Nearest Fill Color Stroke"):
             "塗りつぶし色が近いストローク",
         ("*", "Nearest Stroke Color Stroke"):
-            "線の色が近いのストローク",
+            "線の色が近いストローク",
     },
     "en_US": {
         ("*", "Create New Layer"):
