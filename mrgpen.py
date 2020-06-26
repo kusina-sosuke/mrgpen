@@ -2,8 +2,15 @@ import bpy
 from bpy.app import translations
 from bpy.app.translations import pgettext as pgt
 from random import random
-from bpy.props import StringProperty, EnumProperty, BoolProperty, PointerProperty
+from bpy.props import (
+    StringProperty,
+    EnumProperty,
+    BoolProperty,
+    PointerProperty,
+    FloatProperty,
+)
 from bpy.types import PropertyGroup
+from mathutils import Vector
 
 bl_info = {
     "name": "Mr.GPen",
@@ -51,6 +58,10 @@ translation_dict = {
             "ストロークの線の色を取得",
         ("*", "Pick Vertex Fill Color"):
             "ストロークの塗りつぶし色を取得",
+        ("*", "Nearest Fill Color Stroke"):
+            "塗りつぶし色が近いストローク",
+        ("*", "Nearest Stroke Color Stroke"):
+            "線の色が近いのストローク",
     },
     "en_US": {
         ("*", "Create New Layer"):
@@ -91,6 +102,10 @@ translation_dict = {
             "Pick Vertex Stroke Color",
         ("*", "Pick Vertex Fill Color"):
             "Pick Vertex Fill Color",
+        ("*", "Nearest Fill Color Stroke"):
+            "Nearest Fill Color Stroke",
+        ("*", "Nearest Stroke Color Stroke"):
+            "Nearest Stroke Color Stroke",
     },
 }
 
@@ -598,6 +613,70 @@ class MRGPEN_OT_deselect_all_strokes(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class MRGPEN_OT_select_nearest_color(bpy.types.Operator):
+    """選択中のストロークと近い頂点色のストロークを選択する"""
+    bl_idname = "mrgpen.select_nearest_color"
+    bl_label = "Select Nearest Color"
+
+    target: EnumProperty(
+        default="FILL",
+        items=[
+            ("STROKE", "Stroke", ""),
+            ("FILL", "Fill", ""),
+        ],
+    )
+    type: EnumProperty(
+        default="SELECT",
+        items=[
+            ("SELECT", "Select", ""),
+            ("DESELECT", "Deselect", ""),
+        ],
+    )
+    threshold: FloatProperty(default=.01,)
+
+    def execute(self, context):
+        obj = context.active_object
+        data = obj.data
+
+        # Grease Pencil
+        if not obj and obj.type == "GPENCIL":
+            return {'FINISHED'}
+
+        layers = data.layers
+
+        # 全ストロークと、選択中のストロークの色を取得
+        targets = None
+        selected_colors = None
+        if self.target == "FILL":
+            # 塗りつぶし
+            targets = ((x["stroke"], x["stroke"].vertex_color_fill) for x in gen_strokes(layers))
+            selected_colors = (x["stroke"].vertex_color_fill for x in gen_selected_strokes(layers))
+        else:
+            # 線
+            targets = ((x["point"], x["point"].vertex_color) for x in gen_points(layers))
+            selected_colors = (x["point"].vertex_color for x in gen_selected_points(layers))
+
+        # 各色をベクトルに変換する
+        targets = ((t, Vector(x)) for t, x in targets)
+        selected_colors = tuple(Vector(y) for y in {tuple(x) for x in selected_colors})
+
+        # しきい値より近い色だけを取得
+        threshold = self.threshold
+        nearest_color_targets = (
+            target
+            for target, color in targets
+            for selected_color in selected_colors
+            if (color - selected_color).length / 2 <= threshold
+        )
+
+        # 選択したストロークを選択・非選択状態にする
+        is_type = self.type == "SELECT"
+        for target in nearest_color_targets:
+            target.select = is_type
+
+        return {'FINISHED'}
+
+
 class MRGPEN_PT_view_3d_label(bpy.types.Panel):
     """3D画面横のパネルのUI"""
     bl_space_type = "VIEW_3D"
@@ -669,6 +748,39 @@ class MRGPEN_PT_view_3d_label(bpy.types.Panel):
                 bo(MRGPEN_OT_select_same_layer_stroke.bl_idname, text=pgt("Select Same Layer Stroke"))
                 bo(MRGPEN_OT_deselect_all_strokes.bl_idname,
                     text=pgt("Deselect All Strokes"))
+
+                # 頂点色を使った選択
+                box.separator()
+                box.label(text=pgt("Nearest Fill Color Stroke"))
+                row = box.row(align=True)
+                snc_sf = row.operator(MRGPEN_OT_select_nearest_color.bl_idname,
+                    text=pgt("Select"))
+                snc_sf.type = "SELECT"
+                snc_sf.target = "FILL"
+                snc_sf.threshold = wm.color_threshold
+
+                snc_df = row.operator(MRGPEN_OT_select_nearest_color.bl_idname,
+                    text=pgt("Deselect"))
+                snc_df.type = "DESELECT"
+                snc_df.target = "FILL"
+                snc_df.threshold = wm.color_threshold
+
+                box.label(text=pgt("Nearest Stroke Color Stroke"))
+                row = box.row(align=True)
+                snc_ss = row.operator(MRGPEN_OT_select_nearest_color.bl_idname,
+                    text=pgt("Select"))
+                snc_ss.type = "SELECT"
+                snc_ss.target = "STROKE"
+                snc_ss.threshold = wm.color_threshold
+
+                snc_ds = row.operator(MRGPEN_OT_select_nearest_color.bl_idname,
+                    text=pgt("Deselect"))
+                snc_ds.type = "DESELECT"
+                snc_ds.target = "STROKE"
+                snc_ds.threshold = wm.color_threshold
+
+                box.prop(wm, "color_threshold", text="Threshold")
+                box.separator()
 
         # ストロークのレイヤー関係の機能
         if is_editable and is_selected:
@@ -751,6 +863,7 @@ class MRGPEN_WindowManager(PropertyGroup):
     is_collapse_stroke_material: BoolProperty(default=True)
     is_collapse_vertex_color: BoolProperty(default=True)
     is_collapse_other: BoolProperty(default=True)
+    color_threshold: FloatProperty(default=.01)
 
 
 classes = [
@@ -773,6 +886,7 @@ classes = [
     MRGPEN_OT_deselect_all_strokes,
     MRGPEN_OT_pick_vertex_color,
     MRGPEN_WindowManager,
+    MRGPEN_OT_select_nearest_color,
 ]
 
 def register():
