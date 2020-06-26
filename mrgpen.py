@@ -617,6 +617,7 @@ class MRGPEN_OT_select_nearest_color(bpy.types.Operator):
     """選択中のストロークと近い頂点色のストロークを選択する"""
     bl_idname = "mrgpen.select_nearest_color"
     bl_label = "Select Nearest Color"
+    bl_options = {"REGISTER", "UNDO"}
 
     target: EnumProperty(
         default="FILL",
