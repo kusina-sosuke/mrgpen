@@ -62,6 +62,8 @@ translation_dict = {
             "塗りつぶし色が近いストローク",
         ("*", "Nearest Stroke Color Stroke"):
             "線の色が近いストローク",
+        ("*", "Fade Stroke Edge"):
+            "線の端をフェードアウト",
     },
     "en_US": {
         ("*", "Create New Layer"):
@@ -106,6 +108,8 @@ translation_dict = {
             "Nearest Fill Color Stroke",
         ("*", "Nearest Stroke Color Stroke"):
             "Nearest Stroke Color Stroke",
+        ("*", "Fade Stroke Edge"):
+            "Fade Stroke Edge",
     },
 }
 
@@ -156,6 +160,30 @@ def gen_selected_strokes(layers):
 def get_selected_layers(layers):
     """選択中のレイヤーを返す"""
     return {x["layer"].info: x["layer"] for x in gen_selected_points(layers)}
+
+def get_curve(name):
+    """Node Groupに作成したCurve Nodeを返す"""
+    node_name = "MRGPEN_NODE_{}".format(name)
+
+    node_groups = bpy.data.node_groups
+    nodes = None
+    if node_name in node_groups:
+        nodes = node_groups[node_name].nodes
+    else:
+        nodes = node_groups.new(
+            name=node_name,
+            type="CompositorNodeTree",
+        ).nodes
+
+    node = None
+    if len(nodes) <= 0:
+        node = nodes.new(type="CompositorNodeCurveRGB")
+    else:
+        node = nodes[0]
+
+    node.mapping.initialize()
+
+    return node
 
 class MRGPEN_OT_select_layer(bpy.types.Operator):
     """選択中のストロークのレイヤーを選択する"""
@@ -678,6 +706,64 @@ class MRGPEN_OT_select_nearest_color(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class MRGPEN_OT_fade_stroke_edge(bpy.types.Operator):
+    """選択中のストロークに入り抜きを設定する"""
+    bl_idname = "mrgpen.fade_stroke_edge"
+    bl_label = "Fade Stroke Edge"
+    bl_options = {"REGISTER", "UNDO"}
+
+    is_start: BoolProperty(name="Start", default=True,)
+    is_end: BoolProperty(name="End", default=True,)
+    length: FloatProperty(name="Length", default=1.0,)
+
+    def execute(self, context):
+        obj = context.active_object
+        data = obj.data
+
+        # Grease Pencil
+        if not obj and obj.type == "GPENCIL":
+            return {'FINISHED'}
+
+        layers = data.layers
+        length = self.length
+
+        curve_node = get_curve("ENTRY_AND_EXIT");
+        mapping = curve_node.mapping
+        if len(mapping.curves) <= 0:
+            return {"FINISHED"}
+        curve = mapping.curves[-1]
+
+        def get_points(is_reverse=False):
+            """ポイントと距離を返す"""
+            points_list = (list(x["stroke"].points) for x in gen_selected_strokes(layers))
+
+            if is_reverse:
+                # 逆順
+                points_list = (x[::-1] for x in points_list)
+
+            for points in points_list:
+                pair_points = zip(points[:1] + points, points)
+
+                s = 0
+                for a, b in pair_points:
+                    s += (a.co - b.co).length
+
+                    if s > length:
+                        break
+
+                    yield b, mapping.evaluate(curve, s / length)
+
+        if self.is_start:
+            for point, value in get_points(False):
+                point.pressure = point.pressure * value
+
+        if self.is_end:
+            for point, value in get_points(True):
+                point.pressure = point.pressure * value
+
+        return {'FINISHED'}
+
+
 class MRGPEN_PT_view_3d_label(bpy.types.Panel):
     """3D画面横のパネルのUI"""
     bl_space_type = "VIEW_3D"
@@ -849,6 +935,11 @@ class MRGPEN_PT_view_3d_label(bpy.types.Panel):
                 bo(MRGPEN_OT_mask_layer.bl_idname,
                     text=pgt("Add Stroke Mask"))
 
+                bo(MRGPEN_OT_fade_stroke_edge.bl_idname,
+                    text=pgt("Fade Stroke Edge"))
+                curve_entry_and_exit = get_curve("ENTRY_AND_EXIT")
+                box.template_curve_mapping(curve_entry_and_exit, 'mapping')
+
         if is_editable and not is_selected:
             layout.label(text=pgt("No Selected Stroke."))
 
@@ -888,6 +979,7 @@ classes = [
     MRGPEN_OT_pick_vertex_color,
     MRGPEN_WindowManager,
     MRGPEN_OT_select_nearest_color,
+    MRGPEN_OT_fade_stroke_edge,
 ]
 
 def register():
