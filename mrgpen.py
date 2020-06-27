@@ -714,6 +714,8 @@ class MRGPEN_OT_fade_stroke_edge(bpy.types.Operator):
 
     is_start: BoolProperty(name="Start", default=True,)
     is_end: BoolProperty(name="End", default=True,)
+    is_init: BoolProperty(name="Init", default=False,)
+    thickness: FloatProperty(name="Thickness", default=3,)
     length: FloatProperty(name="Length", default=.1,)
 
     def execute(self, context):
@@ -726,6 +728,12 @@ class MRGPEN_OT_fade_stroke_edge(bpy.types.Operator):
 
         layers = data.layers
         length = self.length
+
+        # 線の太さを初期化
+        if self.is_init:
+            thickness = self.thickness
+            for x in gen_selected_points(layers):
+                x["point"].pressure = thickness
 
         curve_node = get_curve("ENTRY_AND_EXIT");
         mapping = curve_node.mapping
