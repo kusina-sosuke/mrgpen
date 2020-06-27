@@ -11,6 +11,7 @@ from bpy.props import (
 )
 from bpy.types import PropertyGroup
 from mathutils import Vector
+from itertools import chain
 
 bl_info = {
     "name": "Mr.GPen",
@@ -64,6 +65,10 @@ translation_dict = {
             "線の色が近いストローク",
         ("*", "Fade Stroke Edge"):
             "線の端をフェードアウト",
+        ("*", "Init Thickness"):
+            "線の太さを初期化",
+        ("*", "Init Strength"):
+            "線の濃さを初期化",
     },
     "en_US": {
         ("*", "Create New Layer"):
@@ -110,6 +115,10 @@ translation_dict = {
             "Nearest Stroke Color Stroke",
         ("*", "Fade Stroke Edge"):
             "Fade Stroke Edge",
+        ("*", "Init Thickness"):
+            "Init Thickness",
+        ("*", "Init Strength"):
+            "Init Strength",
     },
 }
 
@@ -712,10 +721,18 @@ class MRGPEN_OT_fade_stroke_edge(bpy.types.Operator):
     bl_label = "Fade Stroke Edge"
     bl_options = {"REGISTER", "UNDO"}
 
+    is_presure: BoolProperty(name="Pressure", default=True)
+    is_strength: BoolProperty(name="Strength", default=False)
+
     is_start: BoolProperty(name="Start", default=True,)
     is_end: BoolProperty(name="End", default=True,)
-    is_init: BoolProperty(name="Init", default=False,)
+
+    is_init_thickness: BoolProperty(name="Init Thickness", default=False,)
     thickness: FloatProperty(name="Thickness", default=3,)
+
+    is_init_strength: BoolProperty(name="Init Strength", default=False,)
+    strength: FloatProperty(name="Thickness", default=1,)
+
     length: FloatProperty(name="Length", default=.1,)
 
     def execute(self, context):
@@ -730,10 +747,16 @@ class MRGPEN_OT_fade_stroke_edge(bpy.types.Operator):
         length = self.length
 
         # 線の太さを初期化
-        if self.is_init:
+        if self.is_init_thickness:
             thickness = self.thickness
             for x in gen_selected_points(layers):
                 x["point"].pressure = thickness
+
+        # 線の濃さを初期化
+        if self.is_init_thickness:
+            strength = self.strength
+            for x in gen_selected_points(layers):
+                x["point"].strength = strength
 
         curve_node = get_curve("ENTRY_AND_EXIT");
         mapping = curve_node.mapping
@@ -761,13 +784,24 @@ class MRGPEN_OT_fade_stroke_edge(bpy.types.Operator):
 
                     yield b, mapping.evaluate(curve, s / length)
 
+        # 設定対象のポイントを取得
+        gen_points = []
         if self.is_start:
-            for point, value in get_points(False):
-                point.pressure = point.pressure * value
+            # 始点から
+            gen_points = chain(gen_points, get_points(False))
 
         if self.is_end:
-            for point, value in get_points(True):
+            # 終点から
+            gen_points = chain(gen_points, get_points(True))
+
+        # 太さ、濃さを設定
+        is_presure = self.is_presure
+        is_strength = self.is_strength
+        for point, value in gen_points:
+            if is_presure:
                 point.pressure = point.pressure * value
+            if is_strength:
+                point.strength = point.strength * value
 
         return {'FINISHED'}
 
