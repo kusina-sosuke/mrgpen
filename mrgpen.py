@@ -731,7 +731,7 @@ class MRGPEN_OT_fade_stroke_edge(bpy.types.Operator):
     thickness: FloatProperty(name="Thickness", default=3,)
 
     is_init_strength: BoolProperty(name="Init Strength", default=False,)
-    strength: FloatProperty(name="Thickness", default=1,)
+    strength: FloatProperty(name="Strength", default=1,)
 
     length: FloatProperty(name="Length", default=.1,)
 
