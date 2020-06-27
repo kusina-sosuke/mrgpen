@@ -714,7 +714,7 @@ class MRGPEN_OT_fade_stroke_edge(bpy.types.Operator):
 
     is_start: BoolProperty(name="Start", default=True,)
     is_end: BoolProperty(name="End", default=True,)
-    length: FloatProperty(name="Length", default=1.0,)
+    length: FloatProperty(name="Length", default=.1,)
 
     def execute(self, context):
         obj = context.active_object
