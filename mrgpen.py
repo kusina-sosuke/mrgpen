@@ -1138,7 +1138,11 @@ class MRGPEN_PT_view_3d_label(bpy.types.Panel):
             if submenu(box, "is_collapse_vertex_color", "Vertex Color"):
                 bo = box.operator
 
-                box.prop(bpy.context.tool_settings.gpencil_paint.brush, "color", text="Brush Color")
+                brush = bpy.context.tool_settings.gpencil_paint.brush
+                box.label(text="Brush Color")
+                row = box.row(align=True)
+                row.prop(brush, "color", text="")
+                row.prop(brush, "secondary_color", text="")
 
                 # 選択中のストロークの頂点色を表示
                 if is_selected:
