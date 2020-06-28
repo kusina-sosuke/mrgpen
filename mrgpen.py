@@ -828,11 +828,37 @@ class MRGPEN_OT_fat_stroke(bpy.types.Operator):
     is_stroke: BoolProperty(name="Stroke", default=True,)
     is_material: BoolProperty(name="Stroke Material", default=False,)
     material_index: IntProperty(name="Stroke Material Index", default=0,)
+    stroke_vertex_color: EnumProperty(
+        name="Stroke Vertex Color",
+        default="NONE",
+        items=[
+            ("NONE", "None", ""),
+            ("COLOR", "Color", ""),
+            ("SECONDARY_COLOR", "Secondary Color", ""),
+        ],
+    )
+    stroke_vertex_color_fill: EnumProperty(
+        name="Stroke Vertex Color Fill",
+        default="NONE",
+        items=[
+            ("NONE", "None", ""),
+            ("COLOR", "Color", ""),
+            ("SECONDARY_COLOR", "Secondary Color", ""),
+        ],
+    )
 
     is_fill: BoolProperty(name="Fill", default=False,)
     is_material_fill: BoolProperty(name="Fill Material", default=False,)
     material_index_fill: IntProperty(name="Fill Material Index", default=0,)
-
+    fill_vertex_color: EnumProperty(
+        name="Fill Vertex Color",
+        default="NONE",
+        items=[
+            ("NONE", "None", ""),
+            ("COLOR", "Color", ""),
+            ("SECONDARY_COLOR", "Secondary Color", ""),
+        ],
+    )
 
     def execute(self, context):
         obj = context.active_object
@@ -943,16 +969,26 @@ class MRGPEN_OT_fat_stroke(bpy.types.Operator):
             # オブジェクトのマテリアルの数を取得
             material_length = len(data.materials) - 1
 
+            # ブラシ情報を取得
+            brush = bpy.context.tool_settings.gpencil_paint.brush
+
             # 位置をもとにFillのみのストロークを生成
             if self.is_fill:
                 is_material = self.is_material_fill
                 material_index = self.material_index_fill
                 material_index = max(0, min(material_index, material_length))
 
+                # 設定する色を選択
+                vertex_color_fill = None
+                if self.fill_vertex_color == "COLOR":
+                    vertex_color_fill = list(brush.color) + [1]
+                elif self.fill_vertex_color == "SECONDARY_COLOR":
+                    vertex_color_fill = list(brush.secondary_color) + [1]
+
                 for from_points in (from_points1 + from_points2,):
                     # ストロークを生成
                     s = frame.strokes.new()
-                    s.vertex_color_fill = stroke.vertex_color_fill
+                    s.vertex_color_fill = vertex_color_fill or stroke.vertex_color_fill
 
                     if is_material:
                         s.material_index = material_index
@@ -969,6 +1005,19 @@ class MRGPEN_OT_fat_stroke(bpy.types.Operator):
                 is_material = self.is_material
                 material_index = self.material_index
                 material_index = max(0, min(material_index, material_length))
+
+                # 設定する色を選択
+                vertex_color = None
+                if self.stroke_vertex_color == "COLOR":
+                    vertex_color = list(brush.color) + [1]
+                elif self.stroke_vertex_color == "SECONDARY_COLOR":
+                    vertex_color = list(brush.secondary_color) + [1]
+
+                vertex_color_fill = None
+                if self.stroke_vertex_color_fill == "COLOR":
+                    vertex_color_fill = list(brush.color) + [1]
+                elif self.stroke_vertex_color_fill == "SECONDARY_COLOR":
+                    vertex_color_fill = list(brush.secondary_color) + [1]
 
                 for from_points in from_points_list:
                     # ストロークを生成
@@ -990,7 +1039,7 @@ class MRGPEN_OT_fat_stroke(bpy.types.Operator):
                         # 濃さ、太さ、色をコピー
                         to_point.pressure = p.pressure
                         to_point.strength = p.strength
-                        to_point.vertex_color = p.vertex_color
+                        to_point.vertex_color = vertex_color or p.vertex_color
 
             if not self.is_keep_stroke:
                 # 元のストロークを消す
