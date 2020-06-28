@@ -919,6 +919,7 @@ class MRGPEN_OT_fat_stroke(bpy.types.Operator):
                 s = frame.strokes.new()
                 s.line_width = stroke.line_width
                 s.vertex_color_fill = stroke.vertex_color_fill
+                s.material_index = stroke.material_index
 
                 # ポイントを生成
                 s.points.add(len(from_points))
