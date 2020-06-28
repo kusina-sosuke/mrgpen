@@ -1090,7 +1090,7 @@ class MRGPEN_PT_view_3d_label(bpy.types.Panel):
             break
 
         # 特定のモードかどうか
-        is_editable = mode in {"EDIT_GPENCIL", "SCULPT_GPENCIL"}
+        is_editable = mode in {"EDIT_GPENCIL", "SCULPT_GPENCIL", "VERTEX_GPENCIL"}
         is_paintable = mode in {"PAINT_GPENCIL",}
 
         # レイヤー関係の機能
