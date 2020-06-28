@@ -843,17 +843,34 @@ class MRGPEN_OT_fat_stroke(bpy.types.Operator):
         layers = data.layers
         width = self.width
 
+        # カーブ情報を取得
+        curve_node = get_curve("FAT_STROKE");
+        mapping = curve_node.mapping
+        if len(mapping.curves) <= 0:
+            return {"FINISHED"}
+        curve = mapping.curves[-1]
+
         # 選択中のストローク全て処理する
         for x in gen_selected_strokes(layers):
             # フレームとストロークの情報を取得
             frame = x["frame"]
             stroke = x["stroke"]
 
-            # ポイントとビューポート上の位置のリストを生成
-            points = [{
-                "point": x,
-                "viewport_co": matrix @ x.co,
-            } for x in stroke.points]
+            def gp():
+                """ポイント, ビューポート上の位置, 始点からの距離のリストを生成"""
+                stroke_points = list(stroke.points)
+
+                sum_length = 0
+                for x, y in zip(stroke_points, (stroke_points[:1] + stroke_points)):
+                    sum_length += (x.co - y.co).length
+
+                    yield {
+                        "point": x,
+                        "viewport_co": matrix @ x.co,
+                        "length": sum_length,
+                    }
+
+            points = list(gp())
 
             # 最小二乗法でストロークの向きを取得
             x, y = np.vstack([
@@ -876,9 +893,15 @@ class MRGPEN_OT_fat_stroke(bpy.types.Operator):
                 quate = Quaternion([0, 0, 1], radians(r))
                 width_vector.rotate(quate)
 
+                # ストロークの長さを取得
+                length_points = max(point["length"] for point in points)
+
                 for point in points:
+                    # 幅を取得
+                    w = width * mapping.evaluate(curve, point["length"] / length_points)
+
                     # 線の位置を増やす方向に移動してローカル座標に戻す
-                    co = point["viewport_co"] + width_vector * width
+                    co = point["viewport_co"] + width_vector * w
                     co = matrix_inverted @ co
 
                     yield {
@@ -1091,6 +1114,8 @@ class MRGPEN_PT_view_3d_label(bpy.types.Panel):
 
                 bo(MRGPEN_OT_fat_stroke.bl_idname,
                     text=pgt("Fat Stroke"))
+                fat_stroke_curve = get_curve("FAT_STROKE")
+                box.template_curve_mapping(fat_stroke_curve, 'mapping')
 
         if is_editable and not is_selected:
             layout.label(text=pgt("No Selected Stroke."))
