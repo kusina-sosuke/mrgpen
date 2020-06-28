@@ -825,8 +825,14 @@ class MRGPEN_OT_fat_stroke(bpy.types.Operator):
 
     is_merge_stroke: BoolProperty(name="Merge", default=False,)
 
-    is_material: BoolProperty(name="Material", default=False,)
-    material_index: IntProperty(name="Material Index", default=0,)
+    is_material: BoolProperty(name="Stroke Material", default=False,)
+    material_index: IntProperty(name="Stroke Material Index", default=0,)
+
+    is_material_fill: BoolProperty(name="Fill Material", default=False,)
+    material_index_fill: IntProperty(name="Fill Material Index", default=0,)
+
+    is_stroke: BoolProperty(name="Stroke", default=True,)
+    is_fill: BoolProperty(name="Fill", default=False,)
 
     def execute(self, context):
         obj = context.active_object
@@ -934,29 +940,57 @@ class MRGPEN_OT_fat_stroke(bpy.types.Operator):
             else:
                 from_points_list = (from_points1, from_points2)
 
+            # オブジェクトのマテリアルの数を取得
+            material_length = len(data.materials) - 1
+
+            # 位置をもとにFillのみのストロークを生成
+            if self.is_fill:
+                is_material = self.is_material_fill
+                material_index = self.material_index_fill
+                material_index = max(0, min(material_index, material_length))
+
+                for from_points in (from_points1 + from_points2,):
+                    # ストロークを生成
+                    s = frame.strokes.new()
+                    s.vertex_color_fill = stroke.vertex_color_fill
+
+                    if is_material:
+                        s.material_index = material_index
+                    else:
+                        s.material_index = stroke.material_index
+
+                    # ポイントを生成
+                    s.points.add(len(from_points))
+                    for to_point, from_point in zip(s.points, from_points):
+                        to_point.co = from_point["co"]
+
             # 位置をもとにストロークを生成
-            is_material = self.is_material
-            material_index = self.material_index
-            material_index = max(0, min(material_index, len(data.materials) - 1))
-            for from_points in from_points_list:
-                # ストロークを生成
-                s = frame.strokes.new()
-                s.line_width = stroke.line_width
-                s.vertex_color_fill = stroke.vertex_color_fill
+            if self.is_stroke:
+                is_material = self.is_material
+                material_index = self.material_index
+                material_index = max(0, min(material_index, material_length))
 
-                if is_material:
-                    s.material_index = material_index
-                else:
-                    s.material_index = stroke.material_index
+                for from_points in from_points_list:
+                    # ストロークを生成
+                    s = frame.strokes.new()
+                    s.line_width = stroke.line_width
+                    s.vertex_color_fill = stroke.vertex_color_fill
 
-                # ポイントを生成
-                s.points.add(len(from_points))
-                for to_point, from_point in zip(s.points, from_points):
-                    to_point.co = from_point["co"]
-                    p = from_point["point"]
-                    to_point.pressure = p.pressure
-                    to_point.strength = p.strength
-                    to_point.vertex_color = p.vertex_color
+                    if is_material:
+                        s.material_index = material_index
+                    else:
+                        s.material_index = stroke.material_index
+
+                    # ポイントを生成
+                    s.points.add(len(from_points))
+                    for to_point, from_point in zip(s.points, from_points):
+                        to_point.co = from_point["co"]
+                        p = from_point["point"]
+
+                        # 濃さ、太さ、色をコピー
+                        to_point.pressure = p.pressure
+                        to_point.strength = p.strength
+                        to_point.vertex_color = p.vertex_color
 
             if not self.is_keep_stroke:
                 # 元のストロークを消す
