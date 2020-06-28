@@ -201,6 +201,20 @@ def get_curve(name):
 
     return node
 
+def rgb_to_srgb(rgb):
+    """RGBからsRGBに変換する"""
+    return [
+        v * 12.92 if v <= 0.0031309 else (v ** (1.0 / 2.4)) * 1.055 - 0.055
+        for v in list(rgb)[:3]
+    ]
+
+def srgb_to_rgb(srgb):
+    """sRGBからRGBに変換する"""
+    return [
+        v / 12.92 if v <= 0.04045 else ((v + 0.055) / 1.055) ** 2.4
+        for v in list(srgb)[:3]
+    ]
+
 class MRGPEN_OT_select_layer(bpy.types.Operator):
     """選択中のストロークのレイヤーを選択する"""
     bl_idname = "mrgpen.select_layer"
@@ -630,7 +644,7 @@ class MRGPEN_OT_pick_vertex_color(bpy.types.Operator):
             break
 
         if vertex_color:
-            bpy.context.tool_settings.gpencil_paint.brush.color = vertex_color
+            bpy.context.tool_settings.gpencil_paint.brush.color = rgb_to_srgb(vertex_color)
 
         return {'FINISHED'}
 
