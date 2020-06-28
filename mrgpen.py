@@ -10,8 +10,10 @@ from bpy.props import (
     FloatProperty,
 )
 from bpy.types import PropertyGroup
-from mathutils import Vector
-from itertools import chain
+from math import radians
+from mathutils import Vector, Quaternion
+from itertools import chain, zip_longest
+import numpy as np
 
 bl_info = {
     "name": "Mr.GPen",
@@ -69,6 +71,8 @@ translation_dict = {
             "線の太さを初期化",
         ("*", "Init Strength"):
             "線の濃さを初期化",
+        ("*", "Fat Stroke"):
+            "ストロークを二重にする",
     },
     "en_US": {
         ("*", "Create New Layer"):
@@ -119,6 +123,8 @@ translation_dict = {
             "Init Thickness",
         ("*", "Init Strength"):
             "Init Strength",
+        ("*", "Fat Stroke"):
+            "Fat Stroke",
     },
 }
 
@@ -806,6 +812,107 @@ class MRGPEN_OT_fade_stroke_edge(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class MRGPEN_OT_fat_stroke(bpy.types.Operator):
+    """ストロークを二重にする"""
+    bl_idname = "mrgpen.fat_stroke"
+    bl_label = "Fat Stroke"
+    bl_options = {"REGISTER", "UNDO"}
+
+    width: FloatProperty(name="Length", default=.1,)
+    is_keep_stroke: BoolProperty(name="Keep Stroke", default=False,)
+
+    def execute(self, context):
+        obj = context.active_object
+        data = obj.data
+
+        # Grease Pencil
+        if not obj and obj.type == "GPENCIL":
+            return {'FINISHED'}
+
+        # ビューポートの情報を取得
+        spaces = [x for x in context.area.spaces if x.type == "VIEW_3D"]
+        if len(spaces) <= 0:
+            return {"FINISHED"}
+
+        view_matrix = spaces[0].region_3d.view_matrix
+        matrix_world = obj.matrix_world
+
+        matrix = view_matrix @ matrix_world
+        matrix_inverted = view_matrix.inverted() @ matrix_world.inverted()
+
+        layers = data.layers
+        width = self.width
+
+        # 選択中のストローク全て処理する
+        for x in gen_selected_strokes(layers):
+            # フレームとストロークの情報を取得
+            frame = x["frame"]
+            stroke = x["stroke"]
+
+            # ポイントとビューポート上の位置のリストを生成
+            points = [{
+                "point": x,
+                "viewport_co": matrix @ x.co,
+            } for x in stroke.points]
+
+            # 最小二乗法でストロークの向きを取得
+            x, y = np.vstack([
+                (co.x, co.y)
+                for co in (
+                    p["viewport_co"]
+                    for p in points
+                )
+            ]).T
+            A = np.vstack([x, np.full_like(x, 1)]).T
+            m, c = np.linalg.lstsq(A, y, rcond=False)[0]
+            a = Vector([1, m + c, 0])
+            a = a.normalized()
+
+            def g(r):
+                """ストロークの位置をずらしたリストを生成する"""
+
+                # 線を増やす方向を決定
+                width_vector = a.copy()
+                quate = Quaternion([0, 0, 1], radians(r))
+                width_vector.rotate(quate)
+
+                for point in points:
+                    # 線の位置を増やす方向に移動してローカル座標に戻す
+                    co = point["viewport_co"] + width_vector * width
+                    co = matrix_inverted @ co
+
+                    yield {
+                        **point,
+                        "co": co,
+                    }
+
+            # 左右のストローク位置を生成
+            from_points1 = list(g(-90))
+            from_points2 = list(g(90))[::-1]
+
+            # 位置をもとにストロークを生成
+            for from_points in (from_points1, from_points2):
+                # ストロークを生成
+                s = frame.strokes.new()
+                s.line_width = stroke.line_width
+                s.vertex_color_fill = stroke.vertex_color_fill
+
+                # ポイントを生成
+                s.points.add(len(from_points))
+                for to_point, from_point in zip(s.points, from_points):
+                    to_point.co = from_point["co"]
+                    p = from_point["point"]
+                    to_point.pressure = p.pressure
+                    to_point.strength = p.strength
+                    to_point.vertex_color = p.vertex_color
+
+            if not self.is_keep_stroke:
+                # 元のストロークを消す
+                frame.strokes.remove(stroke)
+
+        return {'FINISHED'}
+
+
 class MRGPEN_PT_view_3d_label(bpy.types.Panel):
     """3D画面横のパネルのUI"""
     bl_space_type = "VIEW_3D"
@@ -982,6 +1089,9 @@ class MRGPEN_PT_view_3d_label(bpy.types.Panel):
                 curve_entry_and_exit = get_curve("ENTRY_AND_EXIT")
                 box.template_curve_mapping(curve_entry_and_exit, 'mapping')
 
+                bo(MRGPEN_OT_fat_stroke.bl_idname,
+                    text=pgt("Fat Stroke"))
+
         if is_editable and not is_selected:
             layout.label(text=pgt("No Selected Stroke."))
 
@@ -1022,6 +1132,7 @@ classes = [
     MRGPEN_WindowManager,
     MRGPEN_OT_select_nearest_color,
     MRGPEN_OT_fade_stroke_edge,
+    MRGPEN_OT_fat_stroke,
 ]
 
 def register():
