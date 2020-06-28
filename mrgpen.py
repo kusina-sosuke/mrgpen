@@ -8,6 +8,7 @@ from bpy.props import (
     BoolProperty,
     PointerProperty,
     FloatProperty,
+    IntProperty,
 )
 from bpy.types import PropertyGroup
 from math import radians
@@ -824,6 +825,9 @@ class MRGPEN_OT_fat_stroke(bpy.types.Operator):
 
     is_merge_stroke: BoolProperty(name="Merge", default=False,)
 
+    is_material: BoolProperty(name="Material", default=False,)
+    material_index: IntProperty(name="Material Index", default=0,)
+
     def execute(self, context):
         obj = context.active_object
         data = obj.data
@@ -931,12 +935,19 @@ class MRGPEN_OT_fat_stroke(bpy.types.Operator):
                 from_points_list = (from_points1, from_points2)
 
             # 位置をもとにストロークを生成
+            is_material = self.is_material
+            material_index = self.material_index
+            material_index = max(0, min(material_index, len(data.materials) - 1))
             for from_points in from_points_list:
                 # ストロークを生成
                 s = frame.strokes.new()
                 s.line_width = stroke.line_width
                 s.vertex_color_fill = stroke.vertex_color_fill
-                s.material_index = stroke.material_index
+
+                if is_material:
+                    s.material_index = material_index
+                else:
+                    s.material_index = stroke.material_index
 
                 # ポイントを生成
                 s.points.add(len(from_points))
