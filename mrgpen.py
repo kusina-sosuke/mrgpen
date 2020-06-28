@@ -74,6 +74,8 @@ translation_dict = {
             "線の濃さを初期化",
         ("*", "Fat Stroke"):
             "ストロークを二重にする",
+        ("*", "Add New Layer and Mask"):
+            "レイヤーを追加してストロークのレイヤーでマスク",
     },
     "en_US": {
         ("*", "Create New Layer"):
@@ -126,6 +128,8 @@ translation_dict = {
             "Init Strength",
         ("*", "Fat Stroke"):
             "Fat Stroke",
+        ("*", "Add New Layer and Mask"):
+            "Add New Layer and Mask",
     },
 }
 
@@ -1062,6 +1066,35 @@ class MRGPEN_OT_fat_stroke(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class MRGPEN_OT_add_new_layer_and_mask(bpy.types.Operator):
+    """新規レイヤーを追加して、選択中のストロークのレイヤーでマスクする"""
+    bl_idname = "mrgpen.add_new_layer_and_mask"
+    bl_label = "Add New Layer and Mask"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        obj = context.active_object
+        data = obj.data
+
+        # Grease Pencil
+        if not obj and obj.type == "GPENCIL":
+            return {'FINISHED'}
+
+        # 選択中のストロークがなければ何もしない
+        for _ in gen_selected_strokes(data.layers):
+            break
+        else:
+            return {'FINISHED'}
+
+        # 選択中のストロークのレイヤーをアクティブにして新規レイヤーを作成してマスクする
+        mrgpen = bpy.ops.mrgpen
+        mrgpen.select_layer()
+        mrgpen.create_layer()
+        mrgpen.mask_layer()
+
+        return {'FINISHED'}
+
+
 class MRGPEN_PT_view_3d_label(bpy.types.Panel):
     """3D画面横のパネルのUI"""
     bl_space_type = "VIEW_3D"
@@ -1122,6 +1155,9 @@ class MRGPEN_PT_view_3d_label(bpy.types.Panel):
             if is_editable and is_selected:
                 box.operator(MRGPEN_OT_move_active_layer.bl_idname,
                     text=pgt("Move Active Layer"))
+
+                box.operator(MRGPEN_OT_add_new_layer_and_mask.bl_idname,
+                    text=pgt("Add New Layer and Mask"))
 
         # 選択関係の機能
         if is_editable and is_selected:
@@ -1288,6 +1324,7 @@ classes = [
     MRGPEN_OT_select_nearest_color,
     MRGPEN_OT_fade_stroke_edge,
     MRGPEN_OT_fat_stroke,
+    MRGPEN_OT_add_new_layer_and_mask,
 ]
 
 def register():
