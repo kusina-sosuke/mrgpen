@@ -821,6 +821,8 @@ class MRGPEN_OT_fat_stroke(bpy.types.Operator):
     width: FloatProperty(name="Length", default=.1,)
     is_keep_stroke: BoolProperty(name="Keep Stroke", default=False,)
 
+    is_merge_stroke: BoolProperty(name="Merge", default=False,)
+
     def execute(self, context):
         obj = context.active_object
         data = obj.data
@@ -913,8 +915,13 @@ class MRGPEN_OT_fat_stroke(bpy.types.Operator):
             from_points1 = list(g(-90))
             from_points2 = list(g(90))[::-1]
 
+            if self.is_merge_stroke:
+                from_points_list = ((from_points1 + from_points2),)
+            else:
+                from_points_list = (from_points1, from_points2)
+
             # 位置をもとにストロークを生成
-            for from_points in (from_points1, from_points2):
+            for from_points in from_points_list:
                 # ストロークを生成
                 s = frame.strokes.new()
                 s.line_width = stroke.line_width
