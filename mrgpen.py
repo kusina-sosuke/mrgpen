@@ -819,6 +819,7 @@ class MRGPEN_OT_fat_stroke(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     width: FloatProperty(name="Length", default=.1,)
+    position: FloatProperty(name="Position", default=0,)
     is_keep_stroke: BoolProperty(name="Keep Stroke", default=False,)
 
     is_merge_stroke: BoolProperty(name="Merge", default=False,)
@@ -844,6 +845,7 @@ class MRGPEN_OT_fat_stroke(bpy.types.Operator):
 
         layers = data.layers
         width = self.width
+        position = self.position
 
         # カーブ情報を取得
         curve_node = get_curve("FAT_STROKE");
@@ -895,6 +897,11 @@ class MRGPEN_OT_fat_stroke(bpy.types.Operator):
                 quate = Quaternion([0, 0, 1], radians(r))
                 width_vector.rotate(quate)
 
+                # 位置をずらすための絶対位置のベクターも生成
+                width_vector_abs = a.copy()
+                quate_abs = Quaternion([0, 0, 1], radians(abs(r)))
+                width_vector_abs.rotate(quate_abs)
+
                 # ストロークの長さを取得
                 length_points = max(point["length"] for point in points)
 
@@ -902,8 +909,11 @@ class MRGPEN_OT_fat_stroke(bpy.types.Operator):
                     # 幅を取得
                     w = width * mapping.evaluate(curve, point["length"] / length_points)
 
+                    # 位置を取得
+                    pos = position * mapping.evaluate(curve, point["length"] / length_points)
+
                     # 線の位置を増やす方向に移動してローカル座標に戻す
-                    co = point["viewport_co"] + width_vector * w
+                    co = point["viewport_co"] + width_vector * w + width_vector_abs * pos
                     co = matrix_inverted @ co
 
                     yield {
