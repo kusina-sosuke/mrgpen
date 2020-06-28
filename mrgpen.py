@@ -825,14 +825,14 @@ class MRGPEN_OT_fat_stroke(bpy.types.Operator):
 
     is_merge_stroke: BoolProperty(name="Merge", default=False,)
 
+    is_stroke: BoolProperty(name="Stroke", default=True,)
     is_material: BoolProperty(name="Stroke Material", default=False,)
     material_index: IntProperty(name="Stroke Material Index", default=0,)
 
+    is_fill: BoolProperty(name="Fill", default=False,)
     is_material_fill: BoolProperty(name="Fill Material", default=False,)
     material_index_fill: IntProperty(name="Fill Material Index", default=0,)
 
-    is_stroke: BoolProperty(name="Stroke", default=True,)
-    is_fill: BoolProperty(name="Fill", default=False,)
 
     def execute(self, context):
         obj = context.active_object
