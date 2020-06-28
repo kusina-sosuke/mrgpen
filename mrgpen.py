@@ -995,9 +995,9 @@ class MRGPEN_OT_fat_stroke(bpy.types.Operator):
                 # 設定する色を選択
                 vertex_color_fill = None
                 if self.fill_vertex_color == "COLOR":
-                    vertex_color_fill = list(brush.color) + [1]
+                    vertex_color_fill = srgb_to_rgb(brush.color) + [1]
                 elif self.fill_vertex_color == "SECONDARY_COLOR":
-                    vertex_color_fill = list(brush.secondary_color) + [1]
+                    vertex_color_fill = srgb_to_rgb(brush.secondary_color) + [1]
 
                 for from_points in (from_points1 + from_points2,):
                     # ストロークを生成
@@ -1023,15 +1023,15 @@ class MRGPEN_OT_fat_stroke(bpy.types.Operator):
                 # 設定する色を選択
                 vertex_color = None
                 if self.stroke_vertex_color == "COLOR":
-                    vertex_color = list(brush.color) + [1]
+                    vertex_color = srgb_to_rgb(brush.color) + [1]
                 elif self.stroke_vertex_color == "SECONDARY_COLOR":
-                    vertex_color = list(brush.secondary_color) + [1]
+                    vertex_color = srgb_to_rgb(brush.secondary_color) + [1]
 
                 vertex_color_fill = None
                 if self.stroke_vertex_color_fill == "COLOR":
-                    vertex_color_fill = list(brush.color) + [1]
+                    vertex_color_fill = srgb_to_rgb(brush.color) + [1]
                 elif self.stroke_vertex_color_fill == "SECONDARY_COLOR":
-                    vertex_color_fill = list(brush.secondary_color) + [1]
+                    vertex_color_fill = srgb_to_rgb(brush.secondary_color) + [1]
 
                 for from_points in from_points_list:
                     # ストロークを生成
