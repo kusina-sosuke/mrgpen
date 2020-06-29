@@ -76,6 +76,8 @@ translation_dict = {
             "ストロークを二重にする",
         ("*", "Add New Layer and Mask"):
             "レイヤーを追加してストロークのレイヤーでマスク",
+        ("*", "Rename Layers"):
+            "複数のレイヤーの名前を変更",
     },
     "en_US": {
         ("*", "Create New Layer"):
@@ -130,6 +132,8 @@ translation_dict = {
             "Fat Stroke",
         ("*", "Add New Layer and Mask"):
             "Add New Layer and Mask",
+        ("*", "Rename Layers"):
+            "Rename Layers",
     },
 }
 
@@ -176,6 +180,13 @@ def gen_selected_strokes(layers):
         for s in gen_strokes(layers)
         if s["stroke"].select
     )
+
+def gen_selected_layers(layers):
+    """選択中のストロークのレイヤーを返す"""
+    for l in layers:
+        for s in (s for f in l.frames for s in f.strokes if s.select):
+            yield l
+            break
 
 def get_selected_layers(layers):
     """選択中のレイヤーを返す"""
@@ -1095,6 +1106,53 @@ class MRGPEN_OT_add_new_layer_and_mask(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class MRGPEN_OT_rename_layers(bpy.types.Operator):
+    """レイヤーを一括でリネームする"""
+    bl_idname = "mrgpen.rename_layers"
+    bl_label = "Rename Layers"
+    bl_options = {"REGISTER", "UNDO"}
+
+    target: EnumProperty(
+        name="Target",
+        default="STROKE",
+        items=[
+            ("STROKE", "Stroke", ""),
+            ("UNLOCKED", "Unlocked", ""),
+            ("VISIBLE", "Visible", ""),
+        ],
+    )
+    new_name: StringProperty(default="new_name")
+
+    def execute(self, context):
+        obj = context.active_object
+        data = obj.data
+
+        # Grease Pencil
+        if not obj and obj.type == "GPENCIL":
+            return {'FINISHED'}
+
+        # 選択中のストロークがなければ何もしない
+        for _ in gen_selected_strokes(data.layers):
+            break
+        else:
+            return {'FINISHED'}
+
+        target_layers = None
+        layers = data.layers
+        if self.target == "UNLOCKED":
+            target_layers = (l for l in layers if not l.lock)
+        elif self.target == "VISIBLE":
+            target_layers = (l for l in layers if not l.hide)
+        elif self.target == "STROKE":
+            target_layers = gen_selected_layers(layers)
+
+        new_name = self.new_name
+        for l in target_layers:
+            l.info = new_name
+
+        return {'FINISHED'}
+
+
 class MRGPEN_PT_view_3d_label(bpy.types.Panel):
     """3D画面横のパネルのUI"""
     bl_space_type = "VIEW_3D"
@@ -1158,6 +1216,9 @@ class MRGPEN_PT_view_3d_label(bpy.types.Panel):
 
                 box.operator(MRGPEN_OT_add_new_layer_and_mask.bl_idname,
                     text=pgt("Add New Layer and Mask"))
+
+            box.operator(MRGPEN_OT_rename_layers.bl_idname,
+                text=pgt(MRGPEN_OT_rename_layers.bl_label))
 
         # 選択関係の機能
         if is_editable and is_selected:
@@ -1325,6 +1386,7 @@ classes = [
     MRGPEN_OT_fade_stroke_edge,
     MRGPEN_OT_fat_stroke,
     MRGPEN_OT_add_new_layer_and_mask,
+    MRGPEN_OT_rename_layers,
 ]
 
 def register():
