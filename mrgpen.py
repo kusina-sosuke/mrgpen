@@ -15,6 +15,7 @@ from math import radians
 from mathutils import Vector, Quaternion
 from itertools import chain, zip_longest
 import numpy as np
+import re
 
 bl_info = {
     "name": "Mr.GPen",
@@ -1121,7 +1122,18 @@ class MRGPEN_OT_rename_layers(bpy.types.Operator):
             ("VISIBLE", "Visible", ""),
         ],
     )
-    new_name: StringProperty(default="new_name")
+    type: EnumProperty(
+        name="Type",
+        default="NEW",
+        items=[
+            ("NEW", "New", ""),
+            ("PREFIX", "Prefix", ""),
+            ("SUFFIX", "Suffix", ""),
+            ("REPLACE", "Replace", ""),
+        ],
+    )
+    new_name: StringProperty(name="New Name", default="new_name")
+    find: StringProperty(name="Find", default=".*")
 
     def execute(self, context):
         obj = context.active_object
@@ -1139,16 +1151,33 @@ class MRGPEN_OT_rename_layers(bpy.types.Operator):
 
         target_layers = None
         layers = data.layers
-        if self.target == "UNLOCKED":
+        target = self.target
+        if target == "UNLOCKED":
             target_layers = (l for l in layers if not l.lock)
-        elif self.target == "VISIBLE":
+        elif target == "VISIBLE":
             target_layers = (l for l in layers if not l.hide)
-        elif self.target == "STROKE":
+        elif target == "STROKE":
             target_layers = gen_selected_layers(layers)
 
+        t = self.type
         new_name = self.new_name
-        for l in target_layers:
-            l.info = new_name
+        target_layers_pair = None
+        if t == "NEW":
+            target_layers_pair = ((x, new_name) for x in target_layers)
+        elif t == "PREFIX":
+            target_layers_pair = ((x, new_name + x.info) for x in target_layers)
+        elif t == "SUFFIX":
+            target_layers_pair = ((x, x.info + new_name) for x in target_layers)
+        elif t == "REPLACE":
+            try:
+                re_sub = re.compile(self.find).sub
+            except:
+                return {"FINISHED"}
+
+            target_layers_pair = ((x, re_sub(new_name, x.info)) for x in target_layers)
+
+        for l, name in target_layers_pair:
+            l.info = name
 
         return {'FINISHED'}
 
