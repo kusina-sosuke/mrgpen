@@ -1134,6 +1134,7 @@ class MRGPEN_OT_rename_layers(bpy.types.Operator):
     )
     new_name: StringProperty(name="New Name", default="new_name")
     find: StringProperty(name="Find", default=".*")
+    is_remove_digits: BoolProperty(name="Digits", default=True)
 
     def execute(self, context):
         obj = context.active_object
@@ -1159,22 +1160,28 @@ class MRGPEN_OT_rename_layers(bpy.types.Operator):
         elif target == "STROKE":
             target_layers = gen_selected_layers(layers)
 
+        target_layers_pair = None
+        if self.is_remove_digits:
+            re_sub = re.compile(r"\.\d+$").sub
+            target_layers_pair = ((x, re_sub("", x.info)) for x in target_layers)
+        else:
+            target_layers_pair = ((x, x.info) for x in target_layers)
+
         t = self.type
         new_name = self.new_name
-        target_layers_pair = None
         if t == "NEW":
-            target_layers_pair = ((x, new_name) for x in target_layers)
+            target_layers_pair = ((x, new_name) for x, name in target_layers_pair)
         elif t == "PREFIX":
-            target_layers_pair = ((x, new_name + x.info) for x in target_layers)
+            target_layers_pair = ((x, new_name + name) for x, name in target_layers_pair)
         elif t == "SUFFIX":
-            target_layers_pair = ((x, x.info + new_name) for x in target_layers)
+            target_layers_pair = ((x, name + new_name) for x, name in target_layers_pair)
         elif t == "REPLACE":
             try:
                 re_sub = re.compile(self.find).sub
             except:
                 return {"FINISHED"}
 
-            target_layers_pair = ((x, re_sub(new_name, x.info)) for x in target_layers)
+            target_layers_pair = ((x, re_sub(new_name, name)) for x, name in target_layers)
 
         for l, name in target_layers_pair:
             l.info = name
