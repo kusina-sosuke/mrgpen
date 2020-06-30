@@ -8,6 +8,7 @@ from bpy.props import (
     BoolProperty,
     PointerProperty,
     FloatProperty,
+    FloatVectorProperty,
     IntProperty,
 )
 from bpy.types import PropertyGroup
@@ -1342,8 +1343,8 @@ class MRGPEN_PT_view_3d_label(bpy.types.Panel):
 
                 # 選択中のストロークの頂点色を表示
                 if is_selected:
-                    box.prop(point, "vertex_color")
-                    box.prop(stroke, "vertex_color_fill")
+                    box.prop(wm, "vertex_color", text="Vertex Color")
+                    box.prop(wm, "vertex_color_fill", text="Vertex Fill Color")
 
                     pick_vertex_color = bo(MRGPEN_OT_pick_vertex_color.bl_idname,
                         text=pgt("Pick Vertex Stroke Color"),
@@ -1388,6 +1389,64 @@ class MRGPEN_PT_view_3d_label(bpy.types.Panel):
         o = context.active_object
         return (o and o.type == "GPENCIL")
 
+def get_vertex_color(self):
+    """選択中のポイントの最初の色を取得する"""
+    obj = bpy.context.active_object
+    data = obj.data
+
+    # Grease Pencil
+    if not obj and obj.type == "GPENCIL":
+        return
+
+    layers = data.layers
+
+    for x in gen_selected_points(layers):
+        return x["point"].vertex_color
+    else:
+        return (1, 0, 0, 0)
+
+def set_vertex_color(self, v):
+    """選択中のポイント全てに色を設定する"""
+    obj = bpy.context.active_object
+    data = obj.data
+
+    # Grease Pencil
+    if not obj and obj.type == "GPENCIL":
+        return
+
+    layers = data.layers
+    for x in gen_selected_points(layers):
+        x["point"].vertex_color = v
+
+def get_vertex_color_fill(self):
+    """選択中のストロークの最初の色を取得する"""
+    obj = bpy.context.active_object
+    data = obj.data
+
+    # Grease Pencil
+    if not obj and obj.type == "GPENCIL":
+        return
+
+    layers = data.layers
+
+    for x in gen_selected_strokes(layers):
+        return x["stroke"].vertex_color_fill
+    else:
+        return (1, 0, 0, 0)
+
+def set_vertex_color_fill(self, v):
+    """選択中のストローク全てに色を設定する"""
+    obj = bpy.context.active_object
+    data = obj.data
+
+    # Grease Pencil
+    if not obj and obj.type == "GPENCIL":
+        return
+
+    layers = data.layers
+    for x in gen_selected_strokes(layers):
+        x["stroke"].vertex_color_fill = v
+
 class MRGPEN_WindowManager(PropertyGroup):
     is_collapse_layer: BoolProperty(default=True)
     is_collapse_select: BoolProperty(default=True)
@@ -1396,6 +1455,22 @@ class MRGPEN_WindowManager(PropertyGroup):
     is_collapse_vertex_color: BoolProperty(default=True)
     is_collapse_other: BoolProperty(default=True)
     color_threshold: FloatProperty(default=.01)
+    vertex_color: FloatVectorProperty(
+        size=4,
+        subtype="COLOR",
+        min=0,
+        max=1,
+        get=get_vertex_color,
+        set=set_vertex_color,
+    )
+    vertex_color_fill: FloatVectorProperty(
+        size=4,
+        subtype="COLOR",
+        min=0,
+        max=1,
+        get=get_vertex_color_fill,
+        set=set_vertex_color_fill,
+    )
 
 
 classes = [
