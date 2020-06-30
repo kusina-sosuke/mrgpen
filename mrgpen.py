@@ -1362,6 +1362,18 @@ class MRGPEN_PT_view_3d_label(bpy.types.Panel):
                 bo(MRGPEN_OT_set_random_tint_color_brush.bl_idname,
                     text=pgt("Set Random Tint Brush"))
 
+        if is_editable and is_selected:
+            box = layout.box()
+            if submenu(box, "is_collapse_strokes", "Strokes"):
+                box.prop(wm, "line_width", text="Width")
+                box.prop(wm, "hardness", text="Hardness")
+                box.prop(wm, "vertex_color_fill", text="Fill")
+
+                box.label(text="Texture")
+                box.prop(wm, "uv_translation", text="Location")
+                box.prop(wm, "uv_rotation", text="Rotation")
+                box.prop(wm, "uv_scale", text="Scale")
+
         # その他の機能
         if is_editable and is_selected:
             box = layout.box()
@@ -1418,8 +1430,8 @@ def set_vertex_color(self, v):
     for x in gen_selected_points(layers):
         x["point"].vertex_color = v
 
-def get_vertex_color_fill(self):
-    """選択中のストロークの最初の色を取得する"""
+def get_strokes_attr(self, name, default_value):
+    """選択中のストロークのプロパティを取得する"""
     obj = bpy.context.active_object
     data = obj.data
 
@@ -1430,12 +1442,12 @@ def get_vertex_color_fill(self):
     layers = data.layers
 
     for x in gen_selected_strokes(layers):
-        return x["stroke"].vertex_color_fill
+        return getattr(x["stroke"], name)
     else:
-        return (1, 0, 0, 0)
+        return default_value
 
-def set_vertex_color_fill(self, v):
-    """選択中のストローク全てに色を設定する"""
+def set_strokes_attr(self, name, v):
+    """選択中の全てのストロークのプロパティを設定する"""
     obj = bpy.context.active_object
     data = obj.data
 
@@ -1445,7 +1457,7 @@ def set_vertex_color_fill(self, v):
 
     layers = data.layers
     for x in gen_selected_strokes(layers):
-        x["stroke"].vertex_color_fill = v
+        setattr(x["stroke"], name, v)
 
 class MRGPEN_WindowManager(PropertyGroup):
     is_collapse_layer: BoolProperty(default=True)
@@ -1454,6 +1466,7 @@ class MRGPEN_WindowManager(PropertyGroup):
     is_collapse_stroke_material: BoolProperty(default=True)
     is_collapse_vertex_color: BoolProperty(default=True)
     is_collapse_other: BoolProperty(default=True)
+    is_collapse_strokes: BoolProperty(default=True)
     color_threshold: FloatProperty(default=.01)
     vertex_color: FloatVectorProperty(
         size=4,
@@ -1468,8 +1481,32 @@ class MRGPEN_WindowManager(PropertyGroup):
         subtype="COLOR",
         min=0,
         max=1,
-        get=get_vertex_color_fill,
-        set=set_vertex_color_fill,
+        get=lambda self: get_strokes_attr(self, "vertex_color_fill", (0, 0, 0, 0,)),
+        set=lambda self, v: set_strokes_attr(self, "vertex_color_fill", v),
+    )
+    hardness: FloatProperty(
+        min=0,
+        max=1,
+        get=lambda self: get_strokes_attr(self, "hardness", 1),
+        set=lambda self, v: set_strokes_attr(self, "hardness", v),
+    )
+    line_width: FloatProperty(
+        get=lambda self: get_strokes_attr(self, "line_width", 1),
+        set=lambda self, v: set_strokes_attr(self, "line_width", v),
+    )
+    uv_rotation: FloatProperty(
+        get=lambda self: get_strokes_attr(self, "uv_rotation", 1),
+        set=lambda self, v: set_strokes_attr(self, "uv_rotation", v),
+    )
+    uv_scale: FloatProperty(
+        get=lambda self: get_strokes_attr(self, "uv_scale", 1),
+        set=lambda self, v: set_strokes_attr(self, "uv_scale", v),
+    )
+    uv_translation: FloatVectorProperty(
+        size=2,
+        subtype="TRANSLATION",
+        get=lambda self: get_strokes_attr(self, "uv_translation", 1),
+        set=lambda self, v: set_strokes_attr(self, "uv_translation", v),
     )
 
 
