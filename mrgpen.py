@@ -1364,6 +1364,13 @@ class MRGPEN_PT_view_3d_label(bpy.types.Panel):
 
         if is_editable and is_selected:
             box = layout.box()
+            if submenu(box, "is_collapse_points", "Points"):
+                box.prop(wm, "strength", text="Strength")
+                box.prop(wm, "pressure", text="Pressure")
+                box.prop(wm, "vertex_color", text="Color")
+
+        if is_editable and is_selected:
+            box = layout.box()
             if submenu(box, "is_collapse_strokes", "Strokes"):
                 box.prop(wm, "line_width", text="Width")
                 box.prop(wm, "hardness", text="Hardness")
@@ -1401,36 +1408,7 @@ class MRGPEN_PT_view_3d_label(bpy.types.Panel):
         o = context.active_object
         return (o and o.type == "GPENCIL")
 
-def get_vertex_color(self):
-    """選択中のポイントの最初の色を取得する"""
-    obj = bpy.context.active_object
-    data = obj.data
-
-    # Grease Pencil
-    if not obj and obj.type == "GPENCIL":
-        return
-
-    layers = data.layers
-
-    for x in gen_selected_points(layers):
-        return x["point"].vertex_color
-    else:
-        return (1, 0, 0, 0)
-
-def set_vertex_color(self, v):
-    """選択中のポイント全てに色を設定する"""
-    obj = bpy.context.active_object
-    data = obj.data
-
-    # Grease Pencil
-    if not obj and obj.type == "GPENCIL":
-        return
-
-    layers = data.layers
-    for x in gen_selected_points(layers):
-        x["point"].vertex_color = v
-
-def get_strokes_attr(self, name, default_value):
+def get_strokes_attr(self, target, name, default_value):
     """選択中のストロークのプロパティを取得する"""
     obj = bpy.context.active_object
     data = obj.data
@@ -1441,12 +1419,18 @@ def get_strokes_attr(self, name, default_value):
 
     layers = data.layers
 
-    for x in gen_selected_strokes(layers):
-        return getattr(x["stroke"], name)
+    strokes = []
+    if target == "stroke":
+        strokes = gen_selected_strokes(layers)
+    elif target == "point":
+        strokes = gen_selected_points(layers)
+
+    for x in strokes:
+        return getattr(x[target], name)
     else:
         return default_value
 
-def set_strokes_attr(self, name, v):
+def set_strokes_attr(self, target, name, v):
     """選択中の全てのストロークのプロパティを設定する"""
     obj = bpy.context.active_object
     data = obj.data
@@ -1456,8 +1440,15 @@ def set_strokes_attr(self, name, v):
         return
 
     layers = data.layers
-    for x in gen_selected_strokes(layers):
-        setattr(x["stroke"], name, v)
+
+    strokes = []
+    if target == "stroke":
+        strokes = gen_selected_strokes(layers)
+    elif target == "point":
+        strokes = gen_selected_points(layers)
+
+    for x in strokes:
+        setattr(x[target], name, v)
 
 class MRGPEN_WindowManager(PropertyGroup):
     is_collapse_layer: BoolProperty(default=True)
@@ -1467,46 +1458,58 @@ class MRGPEN_WindowManager(PropertyGroup):
     is_collapse_vertex_color: BoolProperty(default=True)
     is_collapse_other: BoolProperty(default=True)
     is_collapse_strokes: BoolProperty(default=True)
+    is_collapse_points: BoolProperty(default=True)
     color_threshold: FloatProperty(default=.01)
     vertex_color: FloatVectorProperty(
         size=4,
         subtype="COLOR",
         min=0,
         max=1,
-        get=get_vertex_color,
-        set=set_vertex_color,
+        get=lambda self: get_strokes_attr(self, "point", "vertex_color", (0, 0, 0, 0,)),
+        set=lambda self, v: set_strokes_attr(self, "point", "vertex_color", v),
     )
     vertex_color_fill: FloatVectorProperty(
         size=4,
         subtype="COLOR",
         min=0,
         max=1,
-        get=lambda self: get_strokes_attr(self, "vertex_color_fill", (0, 0, 0, 0,)),
-        set=lambda self, v: set_strokes_attr(self, "vertex_color_fill", v),
+        get=lambda self: get_strokes_attr(self, "stroke", "vertex_color_fill", (0, 0, 0, 0,)),
+        set=lambda self, v: set_strokes_attr(self, "stroke", "vertex_color_fill", v),
     )
     hardness: FloatProperty(
         min=0,
         max=1,
-        get=lambda self: get_strokes_attr(self, "hardness", 1),
-        set=lambda self, v: set_strokes_attr(self, "hardness", v),
+        get=lambda self: get_strokes_attr(self, "stroke", "hardness", 1),
+        set=lambda self, v: set_strokes_attr(self, "stroke", "hardness", v),
     )
     line_width: FloatProperty(
-        get=lambda self: get_strokes_attr(self, "line_width", 1),
-        set=lambda self, v: set_strokes_attr(self, "line_width", v),
+        get=lambda self: get_strokes_attr(self, "stroke", "line_width", 1),
+        set=lambda self, v: set_strokes_attr(self, "stroke", "line_width", v),
     )
     uv_rotation: FloatProperty(
-        get=lambda self: get_strokes_attr(self, "uv_rotation", 1),
-        set=lambda self, v: set_strokes_attr(self, "uv_rotation", v),
+        get=lambda self: get_strokes_attr(self, "stroke", "uv_rotation", 1),
+        set=lambda self, v: set_strokes_attr(self, "stroke", "uv_rotation", v),
     )
     uv_scale: FloatProperty(
-        get=lambda self: get_strokes_attr(self, "uv_scale", 1),
-        set=lambda self, v: set_strokes_attr(self, "uv_scale", v),
+        get=lambda self: get_strokes_attr(self, "stroke", "uv_scale", 1),
+        set=lambda self, v: set_strokes_attr(self, "stroke", "uv_scale", v),
     )
     uv_translation: FloatVectorProperty(
         size=2,
         subtype="TRANSLATION",
-        get=lambda self: get_strokes_attr(self, "uv_translation", 1),
-        set=lambda self, v: set_strokes_attr(self, "uv_translation", v),
+        get=lambda self: get_strokes_attr(self, "stroke", "uv_translation", 1),
+        set=lambda self, v: set_strokes_attr(self, "stroke", "uv_translation", v),
+    )
+    pressure: FloatProperty(
+        min=0,
+        get=lambda self: get_strokes_attr(self, "point", "pressure", 1),
+        set=lambda self, v: set_strokes_attr(self, "point", "pressure", v),
+    )
+    strength: FloatProperty(
+        min=0,
+        max=1,
+        get=lambda self: get_strokes_attr(self, "point", "strength", 1),
+        set=lambda self, v: set_strokes_attr(self, "point", "strength", v),
     )
 
 
