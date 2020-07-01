@@ -1375,6 +1375,10 @@ class MRGPEN_PT_view_3d_label(bpy.types.Panel):
                 box.prop(wm, "line_width", text="Width")
                 box.prop(wm, "hardness", text="Hardness")
                 box.prop(wm, "vertex_color_fill", text="Fill")
+                box.prop(wm, "draw_cyclic", text="Cyclic")
+
+                box.prop(wm, "start_cap_mode", text="Start Cap Mode")
+                box.prop(wm, "end_cap_mode", text="End Cap Mode")
 
                 box.label(text="Texture")
                 box.prop(wm, "uv_translation", text="Location")
@@ -1436,6 +1440,15 @@ def edit_strokes_attr(self, target, name, value=None, default_value=None):
         else:
             return default_value
 
+cap_mode_list = [
+    (*x, "", i) for i, x in enumerate([
+        ("ROUND", "Round"),
+        ("FLAT", "Flat"),
+    ])
+]
+cap_mode_dict = {key:value for key, _, _, value in cap_mode_list}
+cap_mode_num_dict = {key:value for value, _, _, key in cap_mode_list}
+
 class MRGPEN_WindowManager(PropertyGroup):
     is_collapse_layer: BoolProperty(default=True)
     is_collapse_select: BoolProperty(default=True)
@@ -1496,6 +1509,23 @@ class MRGPEN_WindowManager(PropertyGroup):
         max=1,
         get=lambda self: edit_strokes_attr(self, "point", "strength", default_value=1),
         set=lambda self, v: edit_strokes_attr(self, "point", "strength", value=v),
+    )
+    draw_cyclic: BoolProperty(
+        get=lambda self: edit_strokes_attr(self, "stroke", "draw_cyclic", default_value=False),
+        set=lambda self, v: edit_strokes_attr(self, "stroke", "draw_cyclic", value=v),
+    )
+    start_cap_mode: EnumProperty(
+        get=lambda self: cap_mode_dict[edit_strokes_attr(self, "stroke", "start_cap_mode", default_value="ROUND")],
+        set=lambda self, v: edit_strokes_attr(self, "stroke", "start_cap_mode", value=cap_mode_num_dict[v]),
+        items=[
+            ("ROUND", "Round", ""),
+            ("FLAT", "Flat", ""),
+        ],
+    )
+    end_cap_mode: EnumProperty(
+        get=lambda self: cap_mode_dict[edit_strokes_attr(self, "stroke", "end_cap_mode", default_value="ROUND")],
+        set=lambda self, v: edit_strokes_attr(self, "stroke", "end_cap_mode", value=cap_mode_num_dict[v]),
+        items=cap_mode_list,
     )
 
 
