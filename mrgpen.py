@@ -1408,8 +1408,8 @@ class MRGPEN_PT_view_3d_label(bpy.types.Panel):
         o = context.active_object
         return (o and o.type == "GPENCIL")
 
-def get_strokes_attr(self, target, name, default_value):
-    """選択中のストロークのプロパティを取得する"""
+def edit_strokes_attr(self, target, name, value=None, default_value=None):
+    """選択中の全てのストロークのプロパティを取得・設定する"""
     obj = bpy.context.active_object
     data = obj.data
 
@@ -1425,30 +1425,16 @@ def get_strokes_attr(self, target, name, default_value):
     elif target == "point":
         strokes = gen_selected_points(layers)
 
-    for x in strokes:
-        return getattr(x[target], name)
-    else:
-        return default_value
-
-def set_strokes_attr(self, target, name, v):
-    """選択中の全てのストロークのプロパティを設定する"""
-    obj = bpy.context.active_object
-    data = obj.data
-
-    # Grease Pencil
-    if not obj and obj.type == "GPENCIL":
-        return
-
-    layers = data.layers
-
-    strokes = []
-    if target == "stroke":
-        strokes = gen_selected_strokes(layers)
-    elif target == "point":
-        strokes = gen_selected_points(layers)
-
-    for x in strokes:
-        setattr(x[target], name, v)
+    if value is not None:
+        # set
+        for x in strokes:
+            setattr(x[target], name, value)
+    elif default_value is not None:
+        # get
+        for x in strokes:
+            return getattr(x[target], name)
+        else:
+            return default_value
 
 class MRGPEN_WindowManager(PropertyGroup):
     is_collapse_layer: BoolProperty(default=True)
@@ -1465,51 +1451,51 @@ class MRGPEN_WindowManager(PropertyGroup):
         subtype="COLOR",
         min=0,
         max=1,
-        get=lambda self: get_strokes_attr(self, "point", "vertex_color", (0, 0, 0, 0,)),
-        set=lambda self, v: set_strokes_attr(self, "point", "vertex_color", v),
+        get=lambda self: edit_strokes_attr(self, "point", "vertex_color", default_value=(0, 0, 0, 0,)),
+        set=lambda self, v: edit_strokes_attr(self, "point", "vertex_color", value=v),
     )
     vertex_color_fill: FloatVectorProperty(
         size=4,
         subtype="COLOR",
         min=0,
         max=1,
-        get=lambda self: get_strokes_attr(self, "stroke", "vertex_color_fill", (0, 0, 0, 0,)),
-        set=lambda self, v: set_strokes_attr(self, "stroke", "vertex_color_fill", v),
+        get=lambda self: edit_strokes_attr(self, "stroke", "vertex_color_fill", default_value=(0, 0, 0, 0,)),
+        set=lambda self, v: edit_strokes_attr(self, "stroke", "vertex_color_fill", value=v),
     )
     hardness: FloatProperty(
         min=0,
         max=1,
-        get=lambda self: get_strokes_attr(self, "stroke", "hardness", 1),
-        set=lambda self, v: set_strokes_attr(self, "stroke", "hardness", v),
+        get=lambda self: edit_strokes_attr(self, "stroke", "hardness", default_value=1),
+        set=lambda self, v: edit_strokes_attr(self, "stroke", "hardness", value=v),
     )
     line_width: FloatProperty(
-        get=lambda self: get_strokes_attr(self, "stroke", "line_width", 1),
-        set=lambda self, v: set_strokes_attr(self, "stroke", "line_width", v),
+        get=lambda self: edit_strokes_attr(self, "stroke", "line_width", default_value=1),
+        set=lambda self, v: edit_strokes_attr(self, "stroke", "line_width", value=v),
     )
     uv_rotation: FloatProperty(
-        get=lambda self: get_strokes_attr(self, "stroke", "uv_rotation", 1),
-        set=lambda self, v: set_strokes_attr(self, "stroke", "uv_rotation", v),
+        get=lambda self: edit_strokes_attr(self, "stroke", "uv_rotation", default_value=1),
+        set=lambda self, v: edit_strokes_attr(self, "stroke", "uv_rotation", value=v),
     )
     uv_scale: FloatProperty(
-        get=lambda self: get_strokes_attr(self, "stroke", "uv_scale", 1),
-        set=lambda self, v: set_strokes_attr(self, "stroke", "uv_scale", v),
+        get=lambda self: edit_strokes_attr(self, "stroke", "uv_scale", default_value=1),
+        set=lambda self, v: edit_strokes_attr(self, "stroke", "uv_scale", value=v),
     )
     uv_translation: FloatVectorProperty(
         size=2,
         subtype="TRANSLATION",
-        get=lambda self: get_strokes_attr(self, "stroke", "uv_translation", 1),
-        set=lambda self, v: set_strokes_attr(self, "stroke", "uv_translation", v),
+        get=lambda self: edit_strokes_attr(self, "stroke", "uv_translation", default_value=1),
+        set=lambda self, v: edit_strokes_attr(self, "stroke", "uv_translation", value=v),
     )
     pressure: FloatProperty(
         min=0,
-        get=lambda self: get_strokes_attr(self, "point", "pressure", 1),
-        set=lambda self, v: set_strokes_attr(self, "point", "pressure", v),
+        get=lambda self: edit_strokes_attr(self, "point", "pressure", default_value=1),
+        set=lambda self, v: edit_strokes_attr(self, "point", "pressure", value=v),
     )
     strength: FloatProperty(
         min=0,
         max=1,
-        get=lambda self: get_strokes_attr(self, "point", "strength", 1),
-        set=lambda self, v: set_strokes_attr(self, "point", "strength", v),
+        get=lambda self: edit_strokes_attr(self, "point", "strength", default_value=1),
+        set=lambda self, v: edit_strokes_attr(self, "point", "strength", value=v),
     )
 
 
