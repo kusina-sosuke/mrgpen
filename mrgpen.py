@@ -46,6 +46,8 @@ translation_dict = {
             "ブラシの色をランダム化",
         ("*", "Move Active Layer"):
             "ストロークをアクティブレイヤーに移動",
+        ("*", "Move New Layer"):
+            "ストロークを新しいレイヤーに移動する",
         ("*", "Select Same Layer Stroke"):
             "選択中のストロークと同じレイヤーのストロークを選択する",
         ("*", "Hide Stroke Material"):
@@ -102,6 +104,8 @@ translation_dict = {
             "Set Random Tint Brush",
         ("*", "Move Active Layer"):
             "Move Active Layer",
+        ("*", "Move New Layer"):
+            "Move New Layer",
         ("*", "Select Same Layer Stroke"):
             "Select Same Layer Stroke",
         ("*", "Hide Stroke Material"):
@@ -524,6 +528,26 @@ class MRGPEN_OT_move_active_layer(bpy.types.Operator):
             return {'FINISHED'}
 
         bpy.ops.gpencil.move_to_layer(layer=data.layers.active_index)
+
+        return {'FINISHED'}
+
+
+class MRGPEN_OT_move_new_layer(bpy.types.Operator):
+    """選択中のストロークを新しいレイヤーに移動する"""
+    bl_idname = "mrgpen.move_new_layer"
+    bl_label = "Move New Layer"
+
+    def execute(self, context):
+        obj = context.active_object
+        data = obj.data
+
+        # Grease Pencil
+        if not obj and obj.type == "GPENCIL":
+            return {'FINISHED'}
+
+        ops = bpy.ops
+        ops.mrgpen.create_layer()
+        ops.gpencil.move_to_layer(layer=data.layers.active_index)
 
         return {'FINISHED'}
 
@@ -1251,6 +1275,9 @@ class MRGPEN_PT_view_3d_label(bpy.types.Panel):
                 box.operator(MRGPEN_OT_move_active_layer.bl_idname,
                     text=pgt("Move Active Layer"))
 
+                box.operator(MRGPEN_OT_move_new_layer.bl_idname,
+                    text=pgt("Move New Layer"))
+
                 box.operator(MRGPEN_OT_add_new_layer_and_mask.bl_idname,
                     text=pgt("Add New Layer and Mask"))
 
@@ -1538,6 +1565,7 @@ classes = [
     MRGPEN_OT_toggle_lock,
     MRGPEN_OT_toggle_lock_other,
     MRGPEN_OT_move_active_layer,
+    MRGPEN_OT_move_new_layer,
     MRGPEN_OT_set_random_tint_color,
     MRGPEN_OT_set_random_tint_color_brush,
     MRGPEN_PT_view_3d_label,
