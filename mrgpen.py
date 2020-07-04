@@ -635,6 +635,23 @@ class MRGPEN_OT_remove_stroke_layers(bpy.types.Operator):
     """選択中ストロークのレイヤーを削除する"""
     bl_idname = "mrgpen.remove_stroke_layers"
     bl_label = "Remove Stroke Layers"
+    bl_options = {"REGISTER", "UNDO"}
+
+    target: EnumProperty(
+        default="STROKE",
+        items=[
+            ("STROKE", "Selected Stroke", ""),
+            ("EMPTY", "Empty", ""),
+        ],
+    )
+    is_lock: BoolProperty(
+        name="Lock",
+        default=False,
+    )
+    is_hide: BoolProperty(
+        name="Hide",
+        default=False,
+    )
 
     def execute(self, context):
         obj = context.active_object
@@ -647,9 +664,21 @@ class MRGPEN_OT_remove_stroke_layers(bpy.types.Operator):
             return {'FINISHED'}
 
         layers = data.layers
+        is_lock = self.is_lock
+        is_hide = self.is_hide
 
-        # 選択中のストロークをアクティブに変更
-        for l in gen_selected_layers(layers):
+        target_layers = None
+        if self.target == "STROKE":
+            target_layers = gen_selected_layers(layers)
+        elif self.target == "EMPTY":
+            target_layers = (x for x in layers if sum(len(y.strokes) for y in x.frames) <= 0)
+
+        # レイヤーを削除
+        for l in target_layers:
+            if (is_hide and l.hide) or (is_lock and l.lock):
+                # 隠しているかロックがかけられていたら何もしない
+                continue
+
             layers.remove(l)
 
         layers.update()
