@@ -82,6 +82,8 @@ translation_dict = {
             "レイヤーを追加してストロークのレイヤーでマスク",
         ("*", "Rename Layers"):
             "複数のレイヤーの名前を変更",
+        ("*", "Rotate Points"):
+            "点の位置を循環",
     },
     "en_US": {
         ("*", "Create New Layer"):
@@ -140,6 +142,8 @@ translation_dict = {
             "Add New Layer and Mask",
         ("*", "Rename Layers"):
             "Rename Layers",
+        ("*", "Rotate Points"):
+            "Rotate Points",
     },
 }
 
@@ -1210,6 +1214,67 @@ class MRGPEN_OT_rename_layers(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class MRGPEN_OT_rotate_points(bpy.types.Operator):
+    """形状を保ったままポイントを回転させる"""
+    bl_idname = "mrgpen.rotate_points"
+    bl_label = "Rotate Points"
+    bl_options = {"REGISTER", "UNDO"}
+
+    count: IntProperty(
+        name="Count",
+        default=1,
+        min=0,
+    )
+    is_reverse: BoolProperty(
+        name="Reverse",
+        default=False,
+    )
+    is_switch: BoolProperty(
+        name="Switch Direction",
+        default=False,
+    )
+
+    def execute(self, context):
+        obj = context.active_object
+        data = obj.data
+
+        # Grease Pencil
+        if not obj and obj.type == "GPENCIL":
+            return {'FINISHED'}
+
+        count = self.count
+        is_reverse = self.is_reverse
+
+        # 選択中のストロークがなければ何もしない
+        for s in gen_selected_strokes(data.layers):
+            stroke = s['stroke']
+            points = stroke.points
+
+            # 回転する回数
+            c = count % len(points)
+
+            # 各ポイントの位置を取得
+            co_list = [x.co.copy() for x in points]
+
+            if is_reverse:
+                # 逆順にする
+                co_list = co_list[::-1]
+
+            # ポイントと置き換え後の位置のジェネレータを生成
+            co_list = co_list[c:] + co_list[:c]
+            target_points_co = zip(points, co_list)
+
+            for point, co in target_points_co:
+                # 位置を置き換える
+                point.co = co
+
+        if self.is_switch:
+            # 向きだけ変える
+            bpy.ops.gpencil.stroke_flip()
+
+        return {'FINISHED'}
+
+
 class MRGPEN_PT_view_3d_label(bpy.types.Panel):
     """3D画面横のパネルのUI"""
     bl_space_type = "VIEW_3D"
@@ -1401,6 +1466,8 @@ class MRGPEN_PT_view_3d_label(bpy.types.Panel):
                 box.prop(wm, "strength", text="Strength")
                 box.prop(wm, "pressure", text="Pressure")
                 box.prop(wm, "vertex_color", text="Color")
+                box.operator(MRGPEN_OT_rotate_points.bl_idname,
+                    text=pgt("Rotate Points"))
 
         if is_editable and is_selected:
             box = layout.box()
@@ -1586,6 +1653,7 @@ classes = [
     MRGPEN_OT_fade_stroke_edge,
     MRGPEN_OT_fat_stroke,
     MRGPEN_OT_rename_layers,
+    MRGPEN_OT_rotate_points,
 ]
 
 def register():
