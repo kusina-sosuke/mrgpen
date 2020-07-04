@@ -628,6 +628,32 @@ class MRGPEN_OT_add_new_layer(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class MRGPEN_OT_remove_stroke_layers(bpy.types.Operator):
+    """選択中ストロークのレイヤーを削除する"""
+    bl_idname = "mrgpen.remove_stroke_layers"
+    bl_label = "Remove Stroke Layers"
+
+    def execute(self, context):
+        obj = context.active_object
+        data = obj.data
+        mrgpen = bpy.ops.mrgpen
+        ops = bpy.ops
+
+        # Grease Pencil
+        if not obj and obj.type == "GPENCIL":
+            return {'FINISHED'}
+
+        layers = data.layers
+
+        # 選択中のストロークをアクティブに変更
+        for l in gen_selected_layers(layers):
+            layers.remove(l)
+
+        layers.update()
+
+        return {'FINISHED'}
+
+
 class MRGPEN_OT_set_random_tint_color(bpy.types.Operator):
     """アクティブレイヤーにランダムな色を設定する"""
     bl_idname = "mrgpen.set_random_tint_color"
@@ -1415,9 +1441,13 @@ class MRGPEN_PT_view_3d_label(bpy.types.Panel):
             box_column2_1 = box_column2.column(align=True)
             box_column2_2 = box_column2.column(align=True)
 
-            ano = box_column2_1.operator(MRGPEN_OT_add_new_layer.bl_idname,
+            box_column2_1.operator(MRGPEN_OT_add_new_layer.bl_idname,
                 text="",
                 icon="ADD",
+            )
+            box_column2_1.operator(MRGPEN_OT_remove_stroke_layers.bl_idname,
+                text="",
+                icon="REMOVE",
             )
 
             # レイヤー追加のメニュー
@@ -1718,6 +1748,7 @@ classes = [
     MRGPEN_OT_select_layer,
     MRGPEN_OT_mask_layer,
     MRGPEN_OT_add_new_layer,
+    MRGPEN_OT_remove_stroke_layers,
     MRGPEN_OT_toggle_hide,
     MRGPEN_OT_toggle_hide_other,
     MRGPEN_OT_toggle_lock,
