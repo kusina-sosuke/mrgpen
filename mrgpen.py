@@ -532,36 +532,6 @@ class MRGPEN_OT_move_active_layer(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class MRGPEN_OT_move_new_layer(bpy.types.Operator):
-    """選択中のストロークを新しいレイヤーに移動する"""
-    bl_idname = "mrgpen.move_new_layer"
-    bl_label = "Move New Layer"
-    bl_options = {"REGISTER", "UNDO"}
-
-    position: EnumProperty(
-        name="Position",
-        default="UP",
-        items=[
-            ("UP", "Up", ""),
-            ("DOWN", "Down", ""),
-        ],
-    )
-
-    def execute(self, context):
-        obj = context.active_object
-        data = obj.data
-
-        # Grease Pencil
-        if not obj and obj.type == "GPENCIL":
-            return {'FINISHED'}
-
-        ops = bpy.ops
-        ops.mrgpen.add_new_layer(position=self.position)
-        ops.gpencil.move_to_layer(layer=data.layers.active_index)
-
-        return {'FINISHED'}
-
-
 class MRGPEN_OT_mask_layer(bpy.types.Operator):
     """アクティブレイヤーのマスクに選択中のストロークのレイヤーを追加する"""
     bl_idname = "mrgpen.mask_layer"
@@ -602,9 +572,24 @@ class MRGPEN_OT_add_new_layer(bpy.types.Operator):
         ],
     )
 
+    is_move: BoolProperty(
+        name="Move",
+        default=False,
+    )
+    is_mask: BoolProperty(
+        name="Mask",
+        default=False,
+    )
+    is_active_stroke: BoolProperty(
+        name="Active Stroke Layer",
+        default=False,
+    )
+
     def execute(self, context):
         obj = context.active_object
         data = obj.data
+        mrgpen = bpy.ops.mrgpen
+        ops = bpy.ops
 
         # Grease Pencil
         if not obj and obj.type == "GPENCIL":
@@ -612,12 +597,29 @@ class MRGPEN_OT_add_new_layer(bpy.types.Operator):
 
         layers = data.layers
 
+        # 選択中のストロークをアクティブに変更
+        if self.is_active_stroke:
+            mrgpen.select_layer()
+
         # アクティブレイヤーの名前を取得
         note = layers.active_note
+
+        # 新規レイヤー作成
         layers.new(name=note)
 
+        # アクティブレイヤーの下に移動
         if self.position == "DOWN":
-            bpy.ops.gpencil.layer_move(type="DOWN")
+            ops.gpencil.layer_move(type="DOWN")
+
+        # 選択中のストロークのレイヤーでマスク
+        if self.is_mask:
+            mrgpen.mask_layer()
+
+        # 選択中のストロークをアクティブレイヤーに移動
+        if self.is_move:
+            ops.gpencil.move_to_layer(
+                layer=layers.active_index
+            )
 
         return {'FINISHED'}
 
@@ -1126,44 +1128,6 @@ class MRGPEN_OT_fat_stroke(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class MRGPEN_OT_add_new_layer_and_mask(bpy.types.Operator):
-    """新規レイヤーを追加して、選択中のストロークのレイヤーでマスクする"""
-    bl_idname = "mrgpen.add_new_layer_and_mask"
-    bl_label = "Add New Layer and Mask"
-    bl_options = {"REGISTER", "UNDO"}
-
-    position: EnumProperty(
-        name="Position",
-        default="UP",
-        items=[
-            ("UP", "Up", ""),
-            ("DOWN", "Down", ""),
-        ],
-    )
-
-    def execute(self, context):
-        obj = context.active_object
-        data = obj.data
-
-        # Grease Pencil
-        if not obj and obj.type == "GPENCIL":
-            return {'FINISHED'}
-
-        # 選択中のストロークがなければ何もしない
-        for _ in gen_selected_strokes(data.layers):
-            break
-        else:
-            return {'FINISHED'}
-
-        # 選択中のストロークのレイヤーをアクティブにして新規レイヤーを作成してマスクする
-        mrgpen = bpy.ops.mrgpen
-        mrgpen.select_layer()
-        mrgpen.add_new_layer(position=self.position)
-        mrgpen.mask_layer()
-
-        return {'FINISHED'}
-
-
 class MRGPEN_OT_rename_layers(bpy.types.Operator):
     """レイヤーを一括でリネームする"""
     bl_idname = "mrgpen.rename_layers"
@@ -1307,11 +1271,16 @@ class MRGPEN_PT_view_3d_label(bpy.types.Panel):
                 box.operator(MRGPEN_OT_move_active_layer.bl_idname,
                     text=pgt("Move Active Layer"))
 
-                box.operator(MRGPEN_OT_move_new_layer.bl_idname,
+                ano = box.operator(MRGPEN_OT_add_new_layer.bl_idname,
                     text=pgt("Move New Layer"))
+                ano.is_move = True
+                ano.is_mask = False
 
-                box.operator(MRGPEN_OT_add_new_layer_and_mask.bl_idname,
+                ano = box.operator(MRGPEN_OT_add_new_layer.bl_idname,
                     text=pgt("Add New Layer and Mask"))
+                ano.is_move = False
+                ano.is_mask = True
+                ano.is_active_stroke = True
 
             box.operator(MRGPEN_OT_rename_layers.bl_idname,
                 text=pgt(MRGPEN_OT_rename_layers.bl_label))
@@ -1597,7 +1566,6 @@ classes = [
     MRGPEN_OT_toggle_lock,
     MRGPEN_OT_toggle_lock_other,
     MRGPEN_OT_move_active_layer,
-    MRGPEN_OT_move_new_layer,
     MRGPEN_OT_set_random_tint_color,
     MRGPEN_OT_set_random_tint_color_brush,
     MRGPEN_PT_view_3d_label,
@@ -1612,7 +1580,6 @@ classes = [
     MRGPEN_OT_select_nearest_color,
     MRGPEN_OT_fade_stroke_edge,
     MRGPEN_OT_fat_stroke,
-    MRGPEN_OT_add_new_layer_and_mask,
     MRGPEN_OT_rename_layers,
 ]
 
