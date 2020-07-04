@@ -1275,6 +1275,84 @@ class MRGPEN_OT_rotate_points(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class MRGPEN_OT_move_stroke_layers(bpy.types.Operator):
+    """選択したストロークのレイヤーの位置を変える"""
+    bl_idname = "mrgpen.move_stroke_layers"
+    bl_label = "Move Stroke Layers"
+    bl_options = {"REGISTER", "UNDO"}
+
+    count: IntProperty(
+        name="Count",
+        default=1,
+    )
+
+    def execute(self, context):
+        obj = context.active_object
+        data = obj.data
+
+        # Grease Pencil
+        if not obj and obj.type == "GPENCIL":
+            return {'FINISHED'}
+
+        count = self.count
+        layers = data.layers
+        selected_layers = list(gen_selected_layers(layers))
+
+        if count > 0:
+            selected_layers = selected_layers[::-1]
+            direction = "UP"
+        elif count < 0:
+            direction = "DOWN"
+
+        for _ in range(abs(count)):
+            for l in selected_layers:
+                layers.move(l, direction)
+
+        return {'FINISHED'}
+
+
+class MRGPEN_MT_add_new_layer_menu(bpy.types.Menu):
+    """新規レイヤー作成のメニュー"""
+    bl_label = "Mr.GPen Add New Layer Menu"
+
+    def draw(self, context):
+        layout = self.layout
+        mode = context.mode
+        layers = context.active_object.data.layers
+
+        # 特定のモードかどうか
+        is_editable = mode in {"EDIT_GPENCIL", "SCULPT_GPENCIL", "VERTEX_GPENCIL"}
+
+        is_selected = False
+        for x in gen_selected_points(layers):
+            is_selected = True
+            break
+
+        ano = layout.operator(MRGPEN_OT_add_new_layer.bl_idname,
+            text=pgt("Add New Layer"))
+        ano.is_move = False
+        ano.is_mask = False
+        ano.is_active_stroke = False
+
+        if is_editable and is_selected:
+            ano = layout.operator(MRGPEN_OT_add_new_layer.bl_idname,
+                text=pgt("Move New Layer"))
+            ano.is_move = True
+            ano.is_mask = False
+            ano.is_active_stroke = False
+
+            ano = layout.operator(MRGPEN_OT_add_new_layer.bl_idname,
+                text=pgt("Add New Layer and Mask"))
+            ano.is_move = False
+            ano.is_mask = True
+            ano.is_active_stroke = True
+
+    @classmethod
+    def poll(self, context):
+        o = context.active_object
+        return (o and o.type == "GPENCIL")
+
+
 class MRGPEN_PT_view_3d_label(bpy.types.Panel):
     """3D画面横のパネルのUI"""
     bl_space_type = "VIEW_3D"
@@ -1330,30 +1408,37 @@ class MRGPEN_PT_view_3d_label(bpy.types.Panel):
 
         box = layout.box()
         if submenu(box, "is_collapse_layer", "Layer"):
-            ano = box.operator(MRGPEN_OT_add_new_layer.bl_idname,
-                text=pgt("Add New Layer"))
-            ano.is_move = False
-            ano.is_mask = False
-            ano.is_active_stroke = False
+            box_row = box.row()
+            box_column1 = box_row.column(align=True)
+
+            box_column2 = box_row.column()
+            box_column2_1 = box_column2.column(align=True)
+            box_column2_2 = box_column2.column(align=True)
+
+            ano = box_column2_1.operator(MRGPEN_OT_add_new_layer.bl_idname,
+                text="",
+                icon="ADD",
+            )
+
+            # レイヤー追加のメニュー
+            box_column2_1.menu("MRGPEN_MT_add_new_layer_menu", icon="DOWNARROW_HLT", text="")
 
             if is_editable and is_selected:
-                box.operator(MRGPEN_OT_move_active_layer.bl_idname,
+                box_column1.operator(MRGPEN_OT_move_active_layer.bl_idname,
                     text=pgt("Move Active Layer"))
 
-                ano = box.operator(MRGPEN_OT_add_new_layer.bl_idname,
-                    text=pgt("Move New Layer"))
-                ano.is_move = True
-                ano.is_mask = False
-                ano.is_active_stroke = False
-
-                ano = box.operator(MRGPEN_OT_add_new_layer.bl_idname,
-                    text=pgt("Add New Layer and Mask"))
-                ano.is_move = False
-                ano.is_mask = True
-                ano.is_active_stroke = True
-
-            box.operator(MRGPEN_OT_rename_layers.bl_idname,
+            box_column1.operator(MRGPEN_OT_rename_layers.bl_idname,
                 text=pgt(MRGPEN_OT_rename_layers.bl_label))
+
+            if is_editable and is_selected:
+                msl = box_column2_2.operator(MRGPEN_OT_move_stroke_layers.bl_idname,
+                    text="",
+                    icon="TRIA_UP")
+                msl.count = 1
+                msl = box_column2_2.operator(MRGPEN_OT_move_stroke_layers.bl_idname,
+                    text="",
+                    icon="TRIA_DOWN")
+                msl.count = -1
 
         # 選択関係の機能
         if is_editable and is_selected:
@@ -1641,6 +1726,7 @@ classes = [
     MRGPEN_OT_set_random_tint_color,
     MRGPEN_OT_set_random_tint_color_brush,
     MRGPEN_PT_view_3d_label,
+    MRGPEN_MT_add_new_layer_menu,
     MRGPEN_OT_select_same_layer_stroke,
     MRGPEN_OT_toggle_hide_material,
     MRGPEN_OT_toggle_hide_material_other,
@@ -1654,6 +1740,7 @@ classes = [
     MRGPEN_OT_fat_stroke,
     MRGPEN_OT_rename_layers,
     MRGPEN_OT_rotate_points,
+    MRGPEN_OT_move_stroke_layers,
 ]
 
 def register():
