@@ -1132,6 +1132,15 @@ class MRGPEN_OT_add_new_layer_and_mask(bpy.types.Operator):
     bl_label = "Add New Layer and Mask"
     bl_options = {"REGISTER", "UNDO"}
 
+    position: EnumProperty(
+        name="Position",
+        default="UP",
+        items=[
+            ("UP", "Up", ""),
+            ("DOWN", "Down", ""),
+        ],
+    )
+
     def execute(self, context):
         obj = context.active_object
         data = obj.data
@@ -1149,7 +1158,7 @@ class MRGPEN_OT_add_new_layer_and_mask(bpy.types.Operator):
         # 選択中のストロークのレイヤーをアクティブにして新規レイヤーを作成してマスクする
         mrgpen = bpy.ops.mrgpen
         mrgpen.select_layer()
-        mrgpen.create_layer()
+        mrgpen.create_layer(position=self.position)
         mrgpen.mask_layer()
 
         return {'FINISHED'}
