@@ -1438,7 +1438,7 @@ class MRGPEN_PT_view_3d_label(bpy.types.Panel):
         box = layout.box()
         if submenu(box, "is_collapse_layer", "Layer"):
             box_row = box.row()
-            box_column1 = box_row.column(align=True)
+            box_column1 = box_row.column()
 
             box_column2 = box_row.column()
             box_column2_1 = box_column2.column(align=True)
