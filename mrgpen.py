@@ -551,6 +551,9 @@ class MRGPEN_OT_mask_layer(bpy.types.Operator):
 
         layers = data.layers
 
+        if not layers.active:
+            return {"FINISHED"}
+
         # マスクを有効化
         layers.active.use_mask_layer = True
 
@@ -1411,7 +1414,7 @@ class MRGPEN_PT_view_3d_label(bpy.types.Panel):
         is_paintable = mode in {"PAINT_GPENCIL",}
 
         # レイヤー関係の機能
-        if layout.active:
+        if layers.active:
             layout.prop(layers.active, "info", text="Active")
 
         if is_selected and is_editable:
