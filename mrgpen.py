@@ -1265,8 +1265,12 @@ class MRGPEN_PT_view_3d_label(bpy.types.Panel):
 
         box = layout.box()
         if submenu(box, "is_collapse_layer", "Layer"):
-            box.operator(MRGPEN_OT_add_new_layer.bl_idname,
+            ano = box.operator(MRGPEN_OT_add_new_layer.bl_idname,
                 text=pgt("Add New Layer"))
+            ano.is_move = False
+            ano.is_mask = False
+            ano.is_active_stroke = False
+
             if is_editable and is_selected:
                 box.operator(MRGPEN_OT_move_active_layer.bl_idname,
                     text=pgt("Move Active Layer"))
@@ -1275,6 +1279,7 @@ class MRGPEN_PT_view_3d_label(bpy.types.Panel):
                     text=pgt("Move New Layer"))
                 ano.is_move = True
                 ano.is_mask = False
+                ano.is_active_stroke = False
 
                 ano = box.operator(MRGPEN_OT_add_new_layer.bl_idname,
                     text=pgt("Add New Layer and Mask"))
