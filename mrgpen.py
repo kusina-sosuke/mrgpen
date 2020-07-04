@@ -556,7 +556,7 @@ class MRGPEN_OT_move_new_layer(bpy.types.Operator):
             return {'FINISHED'}
 
         ops = bpy.ops
-        ops.mrgpen.create_layer(position=self.position)
+        ops.mrgpen.add_new_layer(position=self.position)
         ops.gpencil.move_to_layer(layer=data.layers.active_index)
 
         return {'FINISHED'}
@@ -587,9 +587,9 @@ class MRGPEN_OT_mask_layer(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class MRGPEN_OT_create_layer(bpy.types.Operator):
+class MRGPEN_OT_add_new_layer(bpy.types.Operator):
     """アクティブレイヤーの名前で新規レイヤーを生成する"""
-    bl_idname = "mrgpen.create_layer"
+    bl_idname = "mrgpen.add_new_layer"
     bl_label = "Add New Layer"
     bl_options = {"REGISTER", "UNDO"}
 
@@ -1158,7 +1158,7 @@ class MRGPEN_OT_add_new_layer_and_mask(bpy.types.Operator):
         # 選択中のストロークのレイヤーをアクティブにして新規レイヤーを作成してマスクする
         mrgpen = bpy.ops.mrgpen
         mrgpen.select_layer()
-        mrgpen.create_layer(position=self.position)
+        mrgpen.add_new_layer(position=self.position)
         mrgpen.mask_layer()
 
         return {'FINISHED'}
@@ -1301,7 +1301,7 @@ class MRGPEN_PT_view_3d_label(bpy.types.Panel):
 
         box = layout.box()
         if submenu(box, "is_collapse_layer", "Layer"):
-            box.operator(MRGPEN_OT_create_layer.bl_idname,
+            box.operator(MRGPEN_OT_add_new_layer.bl_idname,
                 text=pgt("Add New Layer"))
             if is_editable and is_selected:
                 box.operator(MRGPEN_OT_move_active_layer.bl_idname,
@@ -1591,7 +1591,7 @@ class MRGPEN_WindowManager(PropertyGroup):
 classes = [
     MRGPEN_OT_select_layer,
     MRGPEN_OT_mask_layer,
-    MRGPEN_OT_create_layer,
+    MRGPEN_OT_add_new_layer,
     MRGPEN_OT_toggle_hide,
     MRGPEN_OT_toggle_hide_other,
     MRGPEN_OT_toggle_lock,
