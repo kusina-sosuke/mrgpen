@@ -536,6 +536,16 @@ class MRGPEN_OT_move_new_layer(bpy.types.Operator):
     """選択中のストロークを新しいレイヤーに移動する"""
     bl_idname = "mrgpen.move_new_layer"
     bl_label = "Move New Layer"
+    bl_options = {"REGISTER", "UNDO"}
+
+    position: EnumProperty(
+        name="Position",
+        default="UP",
+        items=[
+            ("UP", "Up", ""),
+            ("DOWN", "Down", ""),
+        ],
+    )
 
     def execute(self, context):
         obj = context.active_object
@@ -546,7 +556,7 @@ class MRGPEN_OT_move_new_layer(bpy.types.Operator):
             return {'FINISHED'}
 
         ops = bpy.ops
-        ops.mrgpen.create_layer()
+        ops.mrgpen.create_layer(position=self.position)
         ops.gpencil.move_to_layer(layer=data.layers.active_index)
 
         return {'FINISHED'}
@@ -581,6 +591,16 @@ class MRGPEN_OT_create_layer(bpy.types.Operator):
     """アクティブレイヤーの名前で新規レイヤーを生成する"""
     bl_idname = "mrgpen.create_layer"
     bl_label = "Add New Layer"
+    bl_options = {"REGISTER", "UNDO"}
+
+    position: EnumProperty(
+        name="Position",
+        default="UP",
+        items=[
+            ("UP", "Up", ""),
+            ("DOWN", "Down", ""),
+        ],
+    )
 
     def execute(self, context):
         obj = context.active_object
@@ -595,6 +615,9 @@ class MRGPEN_OT_create_layer(bpy.types.Operator):
         # アクティブレイヤーの名前を取得
         note = layers.active_note
         layers.new(name=note)
+
+        if self.position == "DOWN":
+            bpy.ops.gpencil.layer_move(type="DOWN")
 
         return {'FINISHED'}
 
