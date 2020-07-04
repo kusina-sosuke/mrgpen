@@ -1405,6 +1405,14 @@ class MRGPEN_MT_add_new_layer_menu(bpy.types.Menu):
             ano.is_mask = True
             ano.is_active_stroke = True
 
+        rsl = layout.operator(MRGPEN_OT_remove_stroke_layers.bl_idname,
+            text=pgt("Remove Stroke Layers"))
+        rsl.target = "STROKE"
+
+        rsl = layout.operator(MRGPEN_OT_remove_stroke_layers.bl_idname,
+            text=pgt("Remove Empty Layers"))
+        rsl.target = "EMPTY"
+
     @classmethod
     def poll(self, context):
         o = context.active_object
