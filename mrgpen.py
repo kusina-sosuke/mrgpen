@@ -1343,6 +1343,10 @@ class MRGPEN_OT_move_stroke_layers(bpy.types.Operator):
         name="Count",
         default=1,
     )
+    from_active: BoolProperty(
+        name="From Active",
+        default=False,
+    )
 
     def execute(self, context):
         obj = context.active_object
@@ -1355,6 +1359,14 @@ class MRGPEN_OT_move_stroke_layers(bpy.types.Operator):
         count = self.count
         layers = data.layers
         selected_layers = list(gen_selected_layers(layers))
+
+        if self.from_active:
+            active_index = layers.active_index
+            selected_layers_index_min = min(layers.find(x.info) for x in selected_layers)
+
+            count = count + active_index - selected_layers_index_min
+            if active_index < selected_layers_index_min:
+                count += 1
 
         if count > 0:
             selected_layers = selected_layers[::-1]
