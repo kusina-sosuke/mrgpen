@@ -1636,6 +1636,10 @@ class MRGPEN_PT_view_3d_label(bpy.types.Panel):
                 box.operator(MRGPEN_OT_rotate_points.bl_idname,
                     text=pgt("Rotate Points"))
 
+                ss = box.operator("gpencil.stroke_sample")
+                box.prop(wm, "sample_length", text="Sample Length")
+                ss.length = wm.sample_length
+
         if is_editable and is_selected:
             box = layout.box()
             if submenu(box, "is_collapse_strokes", "Strokes"):
@@ -1793,6 +1797,11 @@ class MRGPEN_WindowManager(PropertyGroup):
         get=lambda self: cap_mode_dict[edit_strokes_attr(self, "stroke", "end_cap_mode", default_value="ROUND")],
         set=lambda self, v: edit_strokes_attr(self, "stroke", "end_cap_mode", value=cap_mode_num_dict[v]),
         items=cap_mode_list,
+    )
+    sample_length: FloatProperty(
+        name="Sample Length",
+        default=.01,
+        min=0,
     )
 
 
