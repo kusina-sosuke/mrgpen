@@ -316,7 +316,7 @@ class MRGPEN_UL_layer_list(bpy.types.UIList):
             # 選択中のフィルター設定でフィルタリング
             re_match = re.compile(data.mrgpen.layer_filter.regex).match
             result_list = [
-                y and (bitflag_filter_item if re_match(x.info) else 0) 
+                y and (bitflag_filter_item if re_match(x.info) else 0)
                 for x, y in zip(data_list, result_list)
             ]
         except:
