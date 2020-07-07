@@ -1880,6 +1880,7 @@ cap_mode_list = [
 cap_mode_dict = {key:value for key, _, _, value in cap_mode_list}
 cap_mode_num_dict = {key:value for value, _, _, key in cap_mode_list}
 
+
 class MRGPEN_WindowManager(PropertyGroup):
     is_collapse_layer: BoolProperty(default=True)
     is_collapse_select: BoolProperty(default=True)
