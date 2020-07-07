@@ -32,6 +32,8 @@ translation_dict = {
             "ストロークのレイヤーを選択",
         ("*", "Add Stroke Mask"):
             "ストロークのレイヤーをマスク",
+        ("*", "Remove Stroke Mask"):
+            "ストロークのレイヤーをマスクを削除",
         ("*", "Hide Stroke Layer"):
             "ストロークのレイヤーを隠す",
         ("*", "Isolate Stroke Layer"):
@@ -92,6 +94,8 @@ translation_dict = {
             "Select Stroke Layer",
         ("*", "Add Stroke Mask"):
             "Add Stroke Mask",
+        ("*", "Remove Stroke Mask"):
+            "Remove Stroke Mask",
         ("*", "Hide Stroke Layer"):
             "Hide Stroke Layer",
         ("*", "Isolate Stroke Layer"):
@@ -542,6 +546,13 @@ class MRGPEN_OT_mask_layer(bpy.types.Operator):
     bl_label = "Add Stroke Mask"
     bl_options = {"REGISTER", "UNDO"}
 
+    method: EnumProperty(
+        default="ADD",
+        items=[
+            ("ADD", "Add", ""),
+            ("REMOVE", "Remove", ""),
+        ],
+    )
     is_init: BoolProperty(
         name="Init",
         default=False,
@@ -564,6 +575,7 @@ class MRGPEN_OT_mask_layer(bpy.types.Operator):
         if not layers.active:
             return {"FINISHED"}
 
+        is_add = self.method == "ADD"
         active = layers.active
         mask_layers = active.mask_layers
         is_invert = self.is_invert
@@ -578,9 +590,14 @@ class MRGPEN_OT_mask_layer(bpy.types.Operator):
 
         # 選択中のストロークのレイヤーを全てマスクに追加
         for x in get_selected_layers(layers).values():
-            mask_layers.add(x)
-            l = mask_layers[-1]
-            l.invert = is_invert
+            if is_add:
+                mask_layers.add(x)
+                l = mask_layers[-1]
+                l.invert = is_invert
+            else:
+                info = x.info
+                while info in mask_layers:
+                    mask_layers.remove(mask_layers[x.info])
 
         return {'FINISHED'}
 
@@ -641,7 +658,7 @@ class MRGPEN_OT_add_new_layer(bpy.types.Operator):
 
         # 選択中のストロークのレイヤーでマスク
         if self.is_mask:
-            mrgpen.mask_layer()
+            mrgpen.mask_layer(method="ADD", is_init=False, is_invert=False)
 
         # 選択中のストロークをアクティブレイヤーに移動
         if self.is_move:
@@ -1683,8 +1700,15 @@ class MRGPEN_PT_view_3d_label(bpy.types.Panel):
             if submenu(box, "is_collapse_other", "Other"):
                 bo = box.operator
 
-                bo(MRGPEN_OT_mask_layer.bl_idname,
+                asm = bo(MRGPEN_OT_mask_layer.bl_idname,
                     text=pgt("Add Stroke Mask"))
+                asm.method = "ADD"
+                asm.is_init = False
+
+                asm = bo(MRGPEN_OT_mask_layer.bl_idname,
+                    text=pgt("Remove Stroke Mask"))
+                asm.method = "REMOVE"
+                asm.is_init = False
 
                 bo(MRGPEN_OT_fade_stroke_edge.bl_idname,
                     text=pgt("Fade Stroke Edge"))
