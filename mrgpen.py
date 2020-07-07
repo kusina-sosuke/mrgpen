@@ -1505,6 +1505,57 @@ class MRGPEN_OT_move_stroke_layers(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class MRGPEN_OT_add_layer_filter(bpy.types.Operator):
+    """レイヤーのフィルター設定を追加する"""
+    bl_idname = "mrgpen.add_layer_filter"
+    bl_label = "Add Layer Filter"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        obj = context.active_object
+        data = obj.data
+
+        # Grease Pencil
+        if not obj and obj.type == "GPENCIL":
+            return {'FINISHED'}
+
+        wm = context.window_manager.mrgpen
+        layer_filters = wm.layer_filters
+
+        layer_filters.add()
+
+        return {'FINISHED'}
+
+
+class MRGPEN_OT_remove_layer_filter(bpy.types.Operator):
+    """レイヤーのフィルター設定を削除する"""
+    bl_idname = "mrgpen.remove_layer_filter"
+    bl_label = "Remove Layer Filter"
+    bl_options = {"REGISTER", "UNDO"}
+
+    index: IntProperty(
+        name="Index",
+        default=0,
+    )
+
+    def execute(self, context):
+        obj = context.active_object
+        data = obj.data
+
+        # Grease Pencil
+        if not obj and obj.type == "GPENCIL":
+            return {'FINISHED'}
+
+        wm = context.window_manager.mrgpen
+        layer_filters = wm.layer_filters
+        index = self.index
+
+        if 0 <= index < len(layer_filters):
+            layer_filters.remove(index)
+
+        return {'FINISHED'}
+
+
 class MRGPEN_MT_add_new_layer_menu(bpy.types.Menu):
     """新規レイヤー作成のメニュー"""
     bl_label = "Mr.GPen Add New Layer Menu"
@@ -1627,29 +1678,6 @@ class MRGPEN_PT_view_3d_label(bpy.types.Panel):
                 icon="REMOVE",
             )
 
-            # レイヤーのフィルターリスト
-            box.label(text="Filters")
-
-            if wm.layer_filter:
-                box.prop(wm.layer_filter, "regex", text="")
-
-            box.template_list(
-                "MRGPEN_UL_layer_filters",
-                "",
-                wm,
-                "layer_filters",
-                wm,
-                "layer_filter_index",
-            )
-            box.template_list(
-                "MRGPEN_UL_layer_list",
-                "",
-                data,
-                "layers",
-                data.layers,
-                "active_index",
-            )
-
             # レイヤー追加のメニュー
             box_column2_1.menu("MRGPEN_MT_add_new_layer_menu", icon="DOWNARROW_HLT", text="")
 
@@ -1669,6 +1697,36 @@ class MRGPEN_PT_view_3d_label(bpy.types.Panel):
                     text="",
                     icon="TRIA_DOWN")
                 msl.count = -1
+
+            # レイヤーのフィルターリスト
+            box.label(text="Filters")
+            row = box.row()
+            column1 = row.column(align=True)
+            column2 = row.column(align=True)
+
+            if wm.layer_filter:
+                column1.prop(wm.layer_filter, "regex", text="")
+
+            column1.template_list(
+                "MRGPEN_UL_layer_filters",
+                "",
+                wm,
+                "layer_filters",
+                wm,
+                "layer_filter_index",
+            )
+            column1.template_list(
+                "MRGPEN_UL_layer_list",
+                "",
+                data,
+                "layers",
+                data.layers,
+                "active_index",
+            )
+
+            column2.operator(MRGPEN_OT_add_layer_filter.bl_idname, text="", icon="ADD")
+            dlf = column2.operator(MRGPEN_OT_remove_layer_filter.bl_idname, text="", icon="REMOVE")
+            dlf.index = wm.layer_filter_index
 
         # 選択関係の機能
         if is_editable and is_selected:
@@ -2015,6 +2073,8 @@ classes = [
     MRGPEN_OT_rename_layers,
     MRGPEN_OT_rotate_points,
     MRGPEN_OT_move_stroke_layers,
+    MRGPEN_OT_add_layer_filter,
+    MRGPEN_OT_remove_layer_filter,
 ]
 
 def register():
