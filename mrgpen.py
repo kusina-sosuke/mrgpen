@@ -298,7 +298,6 @@ class MRGPEN_UL_layer_list(bpy.types.UIList):
         """表示するレイヤーをフィルタする"""
         data_list = getattr(data, prop)
 
-        wm = context.window_manager.mrgpen
         func = bpy.types.UI_UL_list
         bitflag_filter_item = self.bitflag_filter_item
 
@@ -315,7 +314,7 @@ class MRGPEN_UL_layer_list(bpy.types.UIList):
 
         try:
             # 選択中のフィルター設定でフィルタリング
-            re_match = re.compile(wm.layer_filter.regex).match
+            re_match = re.compile(data.mrgpen.layer_filter.regex).match
             result_list = [
                 y and (bitflag_filter_item if re_match(x.info) else 0) 
                 for x, y in zip(data_list, result_list)
@@ -1519,8 +1518,7 @@ class MRGPEN_OT_add_layer_filter(bpy.types.Operator):
         if not obj and obj.type == "GPENCIL":
             return {'FINISHED'}
 
-        wm = context.window_manager.mrgpen
-        layer_filters = wm.layer_filters
+        layer_filters = data.mrgpen.layer_filters
 
         layer_filters.add()
 
@@ -1546,8 +1544,7 @@ class MRGPEN_OT_remove_layer_filter(bpy.types.Operator):
         if not obj and obj.type == "GPENCIL":
             return {'FINISHED'}
 
-        wm = context.window_manager.mrgpen
-        layer_filters = wm.layer_filters
+        layer_filters = data.mrgpen.layer_filters
         index = self.index
 
         if 0 <= index < len(layer_filters):
@@ -1704,15 +1701,15 @@ class MRGPEN_PT_view_3d_label(bpy.types.Panel):
             column1 = row.column(align=True)
             column2 = row.column(align=True)
 
-            if wm.layer_filter:
-                column1.prop(wm.layer_filter, "regex", text="")
+            if data.mrgpen.layer_filter:
+                column1.prop(data.mrgpen.layer_filter, "regex", text="")
 
             column1.template_list(
                 "MRGPEN_UL_layer_filters",
                 "",
-                wm,
+                data.mrgpen,
                 "layer_filters",
-                wm,
+                data.mrgpen,
                 "layer_filter_index",
             )
             column1.template_list(
@@ -1726,7 +1723,7 @@ class MRGPEN_PT_view_3d_label(bpy.types.Panel):
 
             column2.operator(MRGPEN_OT_add_layer_filter.bl_idname, text="", icon="ADD")
             dlf = column2.operator(MRGPEN_OT_remove_layer_filter.bl_idname, text="", icon="REMOVE")
-            dlf.index = wm.layer_filter_index
+            dlf.index = data.mrgpen.layer_filter_index
 
         # 選択関係の機能
         if is_editable and is_selected:
@@ -2022,6 +2019,10 @@ class MRGPEN_WindowManager(PropertyGroup):
         default=.01,
         min=0,
     )
+
+
+class MRGPEN_GreasePencil(PropertyGroup):
+    """グリースペンシルのmrgpen拡張プロパティ"""
     layer_filters: CollectionProperty(
         name="Layer Filters",
         type=MRGPEN_LayerFilters,
@@ -2067,6 +2068,7 @@ classes = [
     MRGPEN_UL_layer_list,
     MRGPEN_LayerFilters,
     MRGPEN_WindowManager,
+    MRGPEN_GreasePencil,
     MRGPEN_OT_select_nearest_color,
     MRGPEN_OT_fade_stroke_edge,
     MRGPEN_OT_fat_stroke,
@@ -2083,6 +2085,7 @@ def register():
 
     translations.register(__name__, translation_dict)
     bpy.types.WindowManager.mrgpen = PointerProperty(type=MRGPEN_WindowManager)
+    bpy.types.GreasePencil.mrgpen = PointerProperty(type=MRGPEN_GreasePencil)
 
 
 def unregister():
@@ -2092,6 +2095,7 @@ def unregister():
         bpy.utils.unregister_class(x)
 
     del bpy.types.WindowManager.mrgpen
+    del bpy.types.GreasePencil.mrgpen
 
 if __name__ == "__main__":
     register()
