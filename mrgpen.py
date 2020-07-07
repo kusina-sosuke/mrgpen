@@ -10,6 +10,7 @@ from bpy.props import (
     FloatProperty,
     FloatVectorProperty,
     IntProperty,
+    CollectionProperty,
 )
 from bpy.types import PropertyGroup
 from math import radians
@@ -243,6 +244,91 @@ def srgb_to_rgb(srgb):
         v / 12.92 if v <= 0.04045 else ((v + 0.055) / 1.055) ** 2.4
         for v in list(srgb)[:3]
     ]
+
+
+class MRGPEN_UL_layer_filters(bpy.types.UIList):
+    """レイヤーフィルター一覧
+    """
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+        """リストを描画する"""
+        self.use_filter_sort_reverse = True
+
+        layout_type = self.layout_type
+        if layout_type in {"DEFAULT"}:
+            # 表示
+            layout.prop(item, "regex", text="", emboss=False)
+
+    def filter_items(self, context, data, prop):
+        """表示するレイヤーフィルターをフィルタする"""
+        data_list = getattr(data, prop)
+
+        func = bpy.types.UI_UL_list
+
+        # 名前フィルタ
+        if self.filter_name:
+            result_list = func.filter_items_by_name(
+                self.filter_name,
+                self.bitflag_filter_item,
+                data_list,
+                "regex",
+            )
+        else:
+            result_list = [self.bitflag_filter_item] * len(data_list)
+
+        return result_list, []
+
+    def draw_filter(self, context, layout):
+        row = layout.row()
+        row.prop(self, "filter_name", text="")
+
+
+class MRGPEN_UL_layer_list(bpy.types.UIList):
+    """レイヤー一覧
+    """
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+        """リストを描画する"""
+        self.use_filter_sort_reverse = True
+
+        layout_type = self.layout_type
+        if layout_type in {"DEFAULT"}:
+            # 表示
+            layout.prop(item, "info", text="", emboss=False)
+
+    def filter_items(self, context, data, prop):
+        """表示するレイヤーをフィルタする"""
+        data_list = getattr(data, prop)
+
+        wm = context.window_manager.mrgpen
+        func = bpy.types.UI_UL_list
+        bitflag_filter_item = self.bitflag_filter_item
+
+        # 名前フィルタ
+        if self.filter_name:
+            result_list = func.filter_items_by_name(
+                self.filter_name,
+                bitflag_filter_item,
+                data_list,
+                "info",
+            )
+        else:
+            result_list = [bitflag_filter_item] * len(data_list)
+
+        try:
+            # 選択中のフィルター設定でフィルタリング
+            re_match = re.compile(wm.layer_filter.regex).match
+            result_list = [
+                y and (bitflag_filter_item if re_match(x.info) else 0) 
+                for x, y in zip(data_list, result_list)
+            ]
+        except:
+            pass
+
+        return result_list, []
+
+    def draw_filter(self, context, layout):
+        row = layout.row()
+        row.prop(self, "filter_name", text="")
+
 
 class MRGPEN_OT_select_layer(bpy.types.Operator):
     """選択中のストロークのレイヤーを選択する"""
@@ -1483,7 +1569,8 @@ class MRGPEN_PT_view_3d_label(bpy.types.Panel):
         wm = context.window_manager.mrgpen
 
         o = layout.operator
-        layers = context.active_object.data.layers
+        data = context.active_object.data
+        layers = data.layers
 
         is_selected = False
         layer = None
@@ -1538,6 +1625,29 @@ class MRGPEN_PT_view_3d_label(bpy.types.Panel):
             box_column2_1.operator(MRGPEN_OT_remove_stroke_layers.bl_idname,
                 text="",
                 icon="REMOVE",
+            )
+
+            # レイヤーのフィルターリスト
+            box.label(text="Filters")
+
+            if wm.layer_filter:
+                box.prop(wm.layer_filter, "regex", text="")
+
+            box.template_list(
+                "MRGPEN_UL_layer_filters",
+                "",
+                wm,
+                "layer_filters",
+                wm,
+                "layer_filter_index",
+            )
+            box.template_list(
+                "MRGPEN_UL_layer_list",
+                "",
+                data,
+                "layers",
+                data.layers,
+                "active_index",
             )
 
             # レイヤー追加のメニュー
@@ -1756,6 +1866,11 @@ def edit_strokes_attr(self, target, name, value=None, default_value=None):
         else:
             return default_value
 
+
+class MRGPEN_LayerFilters(PropertyGroup):
+    regex: StringProperty(default=".+")
+
+
 cap_mode_list = [
     (*x, "", i) for i, x in enumerate([
         ("ROUND", "Round"),
@@ -1848,6 +1963,24 @@ class MRGPEN_WindowManager(PropertyGroup):
         default=.01,
         min=0,
     )
+    layer_filters: CollectionProperty(
+        name="Layer Filters",
+        type=MRGPEN_LayerFilters,
+    )
+    layer_filter_index: IntProperty(
+        name="Layer Filter Index",
+        default=0,
+    )
+
+    @property
+    def layer_filter(self):
+        layer_filters = self.layer_filters
+        layer_filter_index = self.layer_filter_index
+
+        if not (0 <= layer_filter_index < len(layer_filters)):
+            return
+
+        return layer_filters[layer_filter_index]
 
 
 classes = [
@@ -1871,6 +2004,9 @@ classes = [
     MRGPEN_OT_toggle_lock_material_other,
     MRGPEN_OT_deselect_all_strokes,
     MRGPEN_OT_pick_vertex_color,
+    MRGPEN_UL_layer_filters,
+    MRGPEN_UL_layer_list,
+    MRGPEN_LayerFilters,
     MRGPEN_WindowManager,
     MRGPEN_OT_select_nearest_color,
     MRGPEN_OT_fade_stroke_edge,
