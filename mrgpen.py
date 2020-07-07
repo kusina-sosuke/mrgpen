@@ -540,6 +540,16 @@ class MRGPEN_OT_mask_layer(bpy.types.Operator):
     """アクティブレイヤーのマスクに選択中のストロークのレイヤーを追加する"""
     bl_idname = "mrgpen.mask_layer"
     bl_label = "Add Stroke Mask"
+    bl_options = {"REGISTER", "UNDO"}
+
+    is_init: BoolProperty(
+        name="Init",
+        default=False,
+    )
+    is_invert: BoolProperty(
+        name="Invert",
+        default=False,
+    )
 
     def execute(self, context):
         obj = context.active_object
@@ -554,12 +564,23 @@ class MRGPEN_OT_mask_layer(bpy.types.Operator):
         if not layers.active:
             return {"FINISHED"}
 
+        active = layers.active
+        mask_layers = active.mask_layers
+        is_invert = self.is_invert
+
         # マスクを有効化
-        layers.active.use_mask_layer = True
+        active.use_mask_layer = True
+
+        # マスクを初期化
+        if self.is_init:
+            for x in mask_layers:
+                mask_layers.remove(x)
 
         # 選択中のストロークのレイヤーを全てマスクに追加
         for x in get_selected_layers(layers).values():
-            layers.active.mask_layers.add(x)
+            mask_layers.add(x)
+            l = mask_layers[-1]
+            l.invert = is_invert
 
         return {'FINISHED'}
 
