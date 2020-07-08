@@ -333,7 +333,16 @@ class MRGPEN_UL_layer_list(bpy.types.UIList):
         layout_type = self.layout_type
         if layout_type in {"DEFAULT"}:
             # 表示
-            layout.prop(item, "info", text="", emboss=False)
+            row1 = layout.row()
+            row1.prop(item, "info", text="", emboss=False)
+
+            row2 = layout.row(align=True)
+            row2.prop(item, "use_mask_layer", text="", emboss=False,
+                icon="MOD_MASK" if item.use_mask_layer else "LAYER_ACTIVE")
+            row2.prop(item, "use_onion_skinning", text="", emboss=False,
+                icon="ONIONSKIN_ON" if item.use_onion_skinning else "ONIONSKIN_OFF")
+            row2.prop(item, "hide", text="", emboss=False)
+            row2.prop(item, "lock", text="", emboss=False)
 
     def filter_items(self, context, data, prop):
         """表示するレイヤーをフィルタする"""
