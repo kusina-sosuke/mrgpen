@@ -283,17 +283,21 @@ class MRGPEN_UL_layer_filters(bpy.types.UIList):
             regex = item.regex
 
             # フィルターごとに表示・非表示を切り替えるボタン
-            value = all(x.hide for x in filter_layers(layers, regex))
-            elm = row2.operator(
-                MRGPEN_OT_edit_layer_or_material.bl_idname,
-                icon="HIDE_ON" if value else "HIDE_OFF",
-                text="",
-                emboss=False,
-            )
-            elm.method = "HIDE"
-            elm.target = "FILTERS"
-            elm.value = not value
-            elm.name = regex
+            def c(method, key, icon_on, icon_off):
+                value = all(getattr(x, key) for x in filter_layers(layers, regex))
+                elm = row2.operator(
+                    MRGPEN_OT_edit_layer_or_material.bl_idname,
+                    icon=icon_on if value else icon_off,
+                    text="",
+                    emboss=False,
+                )
+                elm.method = method
+                elm.target = "FILTERS"
+                elm.value = not value
+                elm.name = regex
+
+            c("HIDE", "hide", "HIDE_ON", "HIDE_OFF")
+            c("LOCK", "lock", "LOCKED", "UNLOCKED")
 
     def filter_items(self, context, data, prop):
         """表示するレイヤーフィルターをフィルタする"""
