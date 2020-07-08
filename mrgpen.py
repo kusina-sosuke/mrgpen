@@ -379,6 +379,59 @@ class MRGPEN_UL_layer_list(bpy.types.UIList):
         row.prop(self, "filter_name", text="")
 
 
+class MRGPEN_UL_selected_stroke_layer_list(bpy.types.UIList):
+    """選択中ストロークのレイヤー一覧
+    """
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+        """リストを描画する"""
+        self.use_filter_sort_reverse = True
+
+        layout_type = self.layout_type
+        if layout_type in {"DEFAULT"}:
+            # 表示
+            row1 = layout.row()
+            row1.prop(item, "info", text="", emboss=False)
+
+            row2 = layout.row(align=True)
+            row2.prop(item, "use_mask_layer", text="", emboss=False,
+                icon="MOD_MASK" if item.use_mask_layer else "LAYER_ACTIVE")
+            row2.prop(item, "use_onion_skinning", text="", emboss=False,
+                icon="ONIONSKIN_ON" if item.use_onion_skinning else "ONIONSKIN_OFF")
+            row2.prop(item, "hide", text="", emboss=False)
+            row2.prop(item, "lock", text="", emboss=False)
+
+    def filter_items(self, context, data, prop):
+        """表示するレイヤーをフィルタする"""
+        data_list = getattr(data, prop)
+
+        func = bpy.types.UI_UL_list
+        bitflag_filter_item = self.bitflag_filter_item
+
+        # 名前フィルタ
+        if self.filter_name:
+            result_list = func.filter_items_by_name(
+                self.filter_name,
+                bitflag_filter_item,
+                data_list,
+                "info",
+            )
+        else:
+            result_list = [bitflag_filter_item] * len(data_list)
+
+        # 選択中のフィルター設定でフィルタリング
+        selected_layer_set = {x.info for x in gen_selected_layers(data_list)}
+        result_list = [
+            y and (bitflag_filter_item if x.info in selected_layer_set else 0)
+            for x, y in zip(data_list, result_list)
+        ]
+
+        return result_list, []
+
+    def draw_filter(self, context, layout):
+        row = layout.row()
+        row.prop(self, "filter_name", text="")
+
+
 class MRGPEN_OT_select_layer(bpy.types.Operator):
     """選択中のストロークのレイヤーを選択する"""
     bl_idname = "mrgpen.select_layer"
@@ -1836,9 +1889,18 @@ class MRGPEN_PT_view_3d_label(bpy.types.Panel):
             dlf.index = data.mrgpen.layer_filter_index
 
         # 選択関係の機能
-        if is_editable and is_selected:
-            box = layout.box()
-            if submenu(box, "is_collapse_select", "Select"):
+        box = layout.box()
+        if submenu(box, "is_collapse_select", "Select"):
+            box.template_list(
+                "MRGPEN_UL_selected_stroke_layer_list",
+                "",
+                data,
+                "layers",
+                data.layers,
+                "active_index",
+            )
+
+            if is_editable and is_selected:
                 bo = box.operator
                 bo(MRGPEN_OT_select_layer.bl_idname,
                     text=pgt("Select Stroke Layer"))
@@ -2176,6 +2238,7 @@ classes = [
     MRGPEN_OT_pick_vertex_color,
     MRGPEN_UL_layer_filters,
     MRGPEN_UL_layer_list,
+    MRGPEN_UL_selected_stroke_layer_list,
     MRGPEN_LayerFilters,
     MRGPEN_WindowManager,
     MRGPEN_GreasePencil,
