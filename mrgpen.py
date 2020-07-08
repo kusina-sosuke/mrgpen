@@ -267,7 +267,7 @@ class MRGPEN_UL_layer_filters(bpy.types.UIList):
     """
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         """リストを描画する"""
-        self.use_filter_sort_reverse = True
+        self.use_filter_sort_reverse = False
 
         layout_type = self.layout_type
         if layout_type in {"DEFAULT"}:
