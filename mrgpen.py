@@ -246,6 +246,22 @@ def srgb_to_rgb(srgb):
     ]
 
 
+def filter_layers(layers, regex):
+    """レイヤーをフィルタリングする"""
+    try:
+        # 選択中のフィルター設定でフィルタリング
+        re_match = re.compile(regex).match
+        filtered_layers = (
+            x
+            for x in layers
+            if re_match(x.info)
+        )
+    except:
+        filtered_layers = iter(layers)
+
+    yield from filtered_layers
+
+
 class MRGPEN_UL_layer_filters(bpy.types.UIList):
     """レイヤーフィルター一覧
     """
@@ -256,7 +272,28 @@ class MRGPEN_UL_layer_filters(bpy.types.UIList):
         layout_type = self.layout_type
         if layout_type in {"DEFAULT"}:
             # 表示
-            layout.prop(item, "regex", text="", emboss=False)
+            row1 = layout.row()
+            row1.prop(item, "regex", text="", emboss=False)
+
+            row2 = layout.row(align=True)
+
+            obj = context.active_object
+            data = obj.data
+            layers = data.layers
+            regex = item.regex
+
+            # フィルターごとに表示・非表示を切り替えるボタン
+            value = all(x.hide for x in filter_layers(layers, regex))
+            elm = row2.operator(
+                MRGPEN_OT_edit_layer_or_material.bl_idname,
+                icon="HIDE_ON" if value else "HIDE_OFF",
+                text="",
+                emboss=False,
+            )
+            elm.method = "HIDE"
+            elm.target = "FILTERS"
+            elm.value = not value
+            elm.name = regex
 
     def filter_items(self, context, data, prop):
         """表示するレイヤーフィルターをフィルタする"""
@@ -424,6 +461,66 @@ class MRGPEN_OT_toggle_hide_other(bpy.types.Operator):
         r = all(x.hide for x in other_layers)
         for x in other_layers:
             x.hide = not r
+
+        return {'FINISHED'}
+
+
+class MRGPEN_OT_edit_layer_or_material(bpy.types.Operator):
+    """ロック・アンロック、表示・非表示を切り替える"""
+    bl_idname = "mrgpen.edit_layer_or_material"
+    bl_label = "Edit Layer or Material"
+    bl_options = {"REGISTER", "UNDO"}
+
+    method: EnumProperty(
+        name="Method",
+        default="LOCK",
+        items=[
+            ("LOCK", "Lock", ""),
+            ("HIDE", "Hide", ""),
+        ],
+    )
+    target: EnumProperty(
+        name="Target",
+        default="FILTERS",
+        items=[
+            ("FILTERS", "Filters", ""),
+        ],
+    )
+    value: BoolProperty(
+        name="Value",
+        default=True,
+    )
+    name: StringProperty(
+        name="Name",
+        default="",
+    )
+
+    def execute(self, context):
+        obj = context.active_object
+        data = obj.data
+
+        # Grease Pencil
+        if not obj and obj.type == "GPENCIL":
+            return {'FINISHED'}
+
+        layers = data.layers
+        target = self.target
+        is_lock = self.method == "LOCK"
+        value = self.value
+
+        # 操作対象のレイヤーを取得
+        filtered_layers = []
+        if target == "FILTERS":
+            filtered_layers = filter_layers(layers, self.name)
+
+        if is_lock:
+            # ロック
+            for x in filtered_layers:
+                x.lock = value
+        else:
+            # 表示
+            for x in filtered_layers:
+                x.hide = value
 
         return {'FINISHED'}
 
@@ -2077,6 +2174,7 @@ classes = [
     MRGPEN_OT_move_stroke_layers,
     MRGPEN_OT_add_layer_filter,
     MRGPEN_OT_remove_layer_filter,
+    MRGPEN_OT_edit_layer_or_material,
 ]
 
 def register():
