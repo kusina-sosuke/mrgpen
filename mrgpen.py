@@ -550,6 +550,7 @@ class MRGPEN_OT_edit_layer_or_material(bpy.types.Operator):
         default="FILTERS",
         items=[
             ("FILTERS", "Filters", ""),
+            ("STROKE", "Stroke", ""),
         ],
     )
     value: BoolProperty(
@@ -578,6 +579,8 @@ class MRGPEN_OT_edit_layer_or_material(bpy.types.Operator):
         filtered_layers = []
         if target == "FILTERS":
             filtered_layers = filter_layers(layers, self.name)
+        elif target == "STROKE":
+            filtered_layers = gen_selected_layers(layers)
 
         if is_lock:
             # ロック
@@ -1891,7 +1894,12 @@ class MRGPEN_PT_view_3d_label(bpy.types.Panel):
         # 選択関係の機能
         box = layout.box()
         if submenu(box, "is_collapse_select", "Select"):
-            box.template_list(
+            row = box.row()
+            column1 = row.column()
+            column2 = row.column()
+            column2_1 = column2.column(align=True)
+
+            column1.template_list(
                 "MRGPEN_UL_selected_stroke_layer_list",
                 "",
                 data,
@@ -1899,6 +1907,22 @@ class MRGPEN_PT_view_3d_label(bpy.types.Panel):
                 data.layers,
                 "active_index",
             )
+            # 選択ストロークのレイヤーを一括で表示・非表示を切り替えるボタン
+            def c(method, key, icon_on, icon_off):
+                value = all(getattr(x, key) for x in gen_selected_layers(layers))
+                elm = column2_1.operator(
+                    MRGPEN_OT_edit_layer_or_material.bl_idname,
+                    icon=icon_on if value else icon_off,
+                    text="",
+                    emboss=False,
+                )
+                elm.method = method
+                elm.target = "STROKE"
+                elm.value = not value
+                elm.name = ""
+
+            c("HIDE", "hide", "HIDE_ON", "HIDE_OFF")
+            c("LOCK", "lock", "LOCKED", "UNLOCKED")
 
             if is_editable and is_selected:
                 bo = box.operator
