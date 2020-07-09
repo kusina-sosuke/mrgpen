@@ -1897,7 +1897,9 @@ class MRGPEN_PT_view_3d_label(bpy.types.Panel):
             row = box.row()
             column1 = row.column()
             column2 = row.column()
+            column2.scale_x = .125
             column2_1 = column2.column(align=True)
+            column2_2 = column2.column(align=True)
 
             column1.template_list(
                 "MRGPEN_UL_selected_stroke_layer_list",
@@ -1923,6 +1925,10 @@ class MRGPEN_PT_view_3d_label(bpy.types.Panel):
 
             c("HIDE", "hide", "HIDE_ON", "HIDE_OFF")
             c("LOCK", "lock", "LOCKED", "UNLOCKED")
+
+            rl = column2_2.operator(MRGPEN_OT_rename_layers.bl_idname,
+                text="R")
+            rl.target = "STROKE"
 
             if is_editable and is_selected:
                 bo = box.operator
