@@ -1011,6 +1011,16 @@ class MRGPEN_OT_set_random_tint_color(bpy.types.Operator):
     bl_label = "Set Random Tint Stroke"
     bl_options = {"REGISTER", "UNDO"}
 
+    target: EnumProperty(
+        name="Target",
+        default="SELECTED_STROKE",
+        items=[
+            ("SELECTED_STROKE", "Selected Stroke", ""),
+            ("SELECTED_STROKE_LAYER", "Selected Stroke Layer", ""),
+            ("ACTIVE_LAYER", "Active Layer", ""),
+            ("LAYER_FILTER", "Layer Filter", ""),
+        ],
+    )
     is_individual: BoolProperty(name="Individual", default=False)
     is_same_stroke_fill: BoolProperty(name="Same Color", default=False)
 
@@ -1039,10 +1049,22 @@ class MRGPEN_OT_set_random_tint_color(bpy.types.Operator):
         else:
             vertex_color = lambda: (random(), random(), random(), 1)
 
-        for x in gen_selected_strokes(layers):
-            x["stroke"].vertex_color_fill = vertex_color_fill()
+        # 設定対象のストロークを取得
+        target_strokes = []
+        if self.target == "SELECTED_STROKE":
+            target_strokes = (x["stroke"] for x in gen_selected_strokes(layers))
+        elif self.target == "SELECTED_STROKE_LAYER":
+            target_strokes = (y for x in gen_selected_layers(layers) for y in x.active_frame.strokes)
+        elif self.target == "ACTIVE_LAYER":
+            target_strokes = layers.active.active_frame.strokes
+        elif self.target == "LAYER_FILTER":
+            target_strokes = (y for x in data.mrgpen.active_filtered_layers for y in x.active_frame.strokes)
 
-            for y in x["stroke"].points:
+        # 色をストロークに設定
+        for x in target_strokes:
+            x.vertex_color_fill = vertex_color_fill()
+
+            for y in x.points:
                 y.vertex_color = vertex_color()
 
         return {'FINISHED'}
