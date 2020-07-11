@@ -1009,6 +1009,10 @@ class MRGPEN_OT_set_random_tint_color(bpy.types.Operator):
     """ストロークにランダムな色を設定する"""
     bl_idname = "mrgpen.set_random_tint_color"
     bl_label = "Set Random Tint Stroke"
+    bl_options = {"REGISTER", "UNDO"}
+
+    is_individual: BoolProperty(name="Individual", default=False)
+    is_same_stroke_fill: BoolProperty(name="Same Color", default=False)
 
     def execute(self, context):
         obj = context.active_object
@@ -1020,13 +1024,26 @@ class MRGPEN_OT_set_random_tint_color(bpy.types.Operator):
 
         layers = data.layers
 
-        vertex_color_fill = (random(), random(), random(), 1)
-        vertex_color = (random(), random(), random(), 1)
+        # 塗りつぶし色
+        vertex_color_fill = None
+        if self.is_individual:
+            vertex_color_fill = lambda: (random(), random(), random(), 1)
+        else:
+            c = (random(), random(), random(), 1)
+            vertex_color_fill = lambda: c
+
+        # 線色
+        vertex_color = None
+        if self.is_same_stroke_fill:
+            vertex_color = vertex_color_fill
+        else:
+            vertex_color = lambda: (random(), random(), random(), 1)
+
         for x in gen_selected_strokes(layers):
-            x["stroke"].vertex_color_fill = vertex_color_fill
+            x["stroke"].vertex_color_fill = vertex_color_fill()
 
             for y in x["stroke"].points:
-                y.vertex_color = vertex_color
+                y.vertex_color = vertex_color()
 
         return {'FINISHED'}
 
