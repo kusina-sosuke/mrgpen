@@ -1006,7 +1006,7 @@ class MRGPEN_OT_remove_stroke_layers(bpy.types.Operator):
 
 
 class MRGPEN_OT_set_random_tint_color(bpy.types.Operator):
-    """アクティブレイヤーにランダムな色を設定する"""
+    """ストロークにランダムな色を設定する"""
     bl_idname = "mrgpen.set_random_tint_color"
     bl_label = "Set Random Tint Stroke"
 
