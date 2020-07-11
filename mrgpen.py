@@ -960,6 +960,7 @@ class MRGPEN_OT_remove_stroke_layers(bpy.types.Operator):
         default="STROKE",
         items=[
             ("STROKE", "Selected Stroke", ""),
+            ("LAYER_FILTER", "Layer Filter", ""),
             ("EMPTY", "Empty", ""),
         ],
     )
@@ -975,7 +976,6 @@ class MRGPEN_OT_remove_stroke_layers(bpy.types.Operator):
     def execute(self, context):
         obj = context.active_object
         data = obj.data
-        mrgpen = bpy.ops.mrgpen
         ops = bpy.ops
 
         # Grease Pencil
@@ -991,6 +991,8 @@ class MRGPEN_OT_remove_stroke_layers(bpy.types.Operator):
             target_layers = gen_selected_layers(layers)
         elif self.target == "EMPTY":
             target_layers = (x for x in layers if sum(len(y.strokes) for y in x.frames) <= 0)
+        elif self.target == "LAYER_FILTER":
+            target_layers = data.mrgpen.active_filtered_layers
 
         # レイヤーを削除
         for l in target_layers:
