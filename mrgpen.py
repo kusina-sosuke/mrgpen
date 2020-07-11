@@ -557,6 +557,10 @@ class MRGPEN_OT_edit_layer_or_material(bpy.types.Operator):
         name="Value",
         default=True,
     )
+    is_solo: BoolProperty(
+        name="Solo",
+        default=False,
+    )
     name: StringProperty(
         name="Name",
         default="",
@@ -581,6 +585,11 @@ class MRGPEN_OT_edit_layer_or_material(bpy.types.Operator):
             filtered_layers = filter_layers(layers, self.name)
         elif target == "STROKE":
             filtered_layers = gen_selected_layers(layers)
+
+        # 対象外のレイヤーを対象にする
+        if self.is_solo:
+            rejected_layers = {x.info for x in filtered_layers}
+            filtered_layers = (x for x in layers if x.info not in rejected_layers)
 
         if is_lock:
             # ロック
