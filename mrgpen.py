@@ -2274,6 +2274,21 @@ class MRGPEN_GreasePencil(PropertyGroup):
 
         return layer_filters[layer_filter_index]
 
+    @property
+    def active_filtered_layers(self):
+        layer_filters = self.layer_filters
+        layer_filter_index = self.layer_filter_index
+
+        obj = bpy.context.active_object
+        if not obj and obj.type == "GPENCIL":
+            return []
+
+        layer_filter = self.layer_filter
+        if not layer_filter:
+            return []
+
+        return list(filter_layers(obj.data.layers, layer_filter.regex))
+
 
 classes = [
     MRGPEN_OT_select_layer,
