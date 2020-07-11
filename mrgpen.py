@@ -881,6 +881,15 @@ class MRGPEN_OT_add_new_layer(bpy.types.Operator):
         default=False,
     )
 
+    is_use_active_pass_index: BoolProperty(
+        name="Use Active Pass Index",
+        default=False,
+    )
+    pass_index: IntProperty(
+        name="Pass Index",
+        default=0,
+    )
+
     def execute(self, context):
         obj = context.active_object
         data = obj.data
@@ -897,11 +906,23 @@ class MRGPEN_OT_add_new_layer(bpy.types.Operator):
         if self.is_active_stroke:
             mrgpen.select_layer()
 
-        # アクティブレイヤーの名前を取得
-        note = layers.active_note
+        # 旧アクティブレイヤーの情報を取得
+        old_active = layers.active
+        old_note = layers.active_note
 
         # 新規レイヤー作成
-        layers.new(name=note)
+        layers.new(name=old_note)
+
+        new_active = layers.active
+
+        # 新規レイヤーのPass Indexを設定
+        pass_index = 0
+        if self.is_use_active_pass_index:
+            pass_index = old_active.pass_index
+        else:
+            pass_index = self.pass_index
+
+        new_active.pass_index = pass_index
 
         # アクティブレイヤーの下に移動
         if self.position == "DOWN":
