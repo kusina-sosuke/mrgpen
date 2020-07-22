@@ -1790,6 +1790,50 @@ class MRGPEN_OT_remove_layer_filter(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class MRGPEN_OT_pick_sample_length(bpy.types.Operator):
+    """選択中のストロークからsample値を取得する"""
+    bl_idname = "mrgpen.pick_sample_length"
+    bl_label = "Pick Sample Length"
+    bl_options = {"REGISTER", "UNDO"}
+
+    method: EnumProperty(
+        name="Method",
+        default="average",
+        items=[
+            ("average", "Average", ""),
+            ("min", "Min", ""),
+            ("max", "Max", ""),
+        ],
+    )
+
+    def execute(self, context):
+        obj = context.active_object
+        data = obj.data
+
+        # Grease Pencil
+        if not obj and obj.type == "GPENCIL":
+            return {'FINISHED'}
+
+        layers = data.layers
+
+        # 取得に使用するメソッド
+        method = getattr(np, self.method)
+
+        # 選択中ストロークの最初の一つから長さを計算する
+        for x in gen_selected_strokes(layers):
+            # 全点取得
+            p = [y.co for y in x["stroke"].points]
+
+            # 各点の距離を取得して、メソッドで計算
+            a = method([y for y in ((a - b).length for a, b in zip(p, p[1:])) if y > 0])
+
+            # メニューの長さに設定する
+            context.window_manager.mrgpen.sample_length = a
+            break
+
+        return {'FINISHED'}
+
+
 class MRGPEN_MT_add_new_layer_menu(bpy.types.Menu):
     """新規レイヤー作成のメニュー"""
     bl_label = "Mr.GPen Add New Layer Menu"
@@ -2113,7 +2157,13 @@ class MRGPEN_PT_view_3d_label(bpy.types.Panel):
                     text=pgt("Rotate Points"))
 
                 ss = box.operator("gpencil.stroke_sample")
-                box.prop(wm, "sample_length", text="Sample Length")
+
+                r = box.row(align=True)
+                r.prop(wm, "sample_length", text="Sample Length")
+                r.operator(MRGPEN_OT_pick_sample_length.bl_idname,
+                    icon="EYEDROPPER",
+                    text="")
+
                 ss.length = wm.sample_length
 
         if is_editable and is_selected:
@@ -2367,6 +2417,7 @@ classes = [
     MRGPEN_OT_add_layer_filter,
     MRGPEN_OT_remove_layer_filter,
     MRGPEN_OT_edit_layer_or_material,
+    MRGPEN_OT_pick_sample_length,
 ]
 
 def register():
