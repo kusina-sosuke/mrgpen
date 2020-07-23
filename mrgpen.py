@@ -2128,8 +2128,59 @@ class MRGPEN_PT_view_3d_label(bpy.types.Panel):
 
                 # 選択中のストロークの頂点色を表示
                 if is_selected:
-                    box.prop(wm, "vertex_color", text="Vertex Color")
-                    box.prop(wm, "vertex_color_fill", text="Vertex Fill Color")
+                    # 選択中ポイントのカラー
+                    r = box.row()
+                    r.alignment = "LEFT"
+                    r.prop(
+                        wm,
+                        "is_show_all_vertex_color",
+                        icon="TRIA_DOWN" if wm.is_show_all_vertex_color else "TRIA_RIGHT",
+                        text="Vertex Color",
+                        emboss=False,
+                    )
+                    if wm.is_show_all_vertex_color:
+                        r = box.grid_flow(
+                            align=True,
+                            even_columns=True,
+                            even_rows=True,
+                        )
+                        for x in gen_selected_points(layers):
+                            c = r.column(align=True)
+                            c.prop(
+                                x["point"],
+                                "vertex_color",
+                                text="",
+                            )
+                            c.ui_units_x = 1
+                    else:
+                        box.prop(wm, "vertex_color", text="")
+
+                    # 選択中ストロークの塗りつぶしカラー
+                    r = box.row()
+                    r.alignment = "LEFT"
+                    r.prop(
+                        wm,
+                        "is_show_all_vertex_color_fill",
+                        icon="TRIA_DOWN" if wm.is_show_all_vertex_color_fill else "TRIA_RIGHT",
+                        text="Vertex Fill Color",
+                        emboss=False,
+                    )
+                    if wm.is_show_all_vertex_color_fill:
+                        r = box.grid_flow(
+                            align=True,
+                            even_columns=True,
+                            even_rows=True,
+                        )
+                        for x in gen_selected_strokes(layers):
+                            c = r.column(align=True)
+                            c.prop(
+                                x["stroke"],
+                                "vertex_color_fill",
+                                text="",
+                            )
+                            c.ui_units_x = 1
+                    else:
+                        box.prop(wm, "vertex_color_fill", text="")
 
                     pick_vertex_color = bo(MRGPEN_OT_pick_vertex_color.bl_idname,
                         text=pgt("Pick Vertex Stroke Color"),
@@ -2265,6 +2316,8 @@ class MRGPEN_WindowManager(PropertyGroup):
     is_collapse_stroke_layer: BoolProperty(default=True)
     is_collapse_stroke_material: BoolProperty(default=True)
     is_collapse_vertex_color: BoolProperty(default=True)
+    is_show_all_vertex_color: BoolProperty(default=False)
+    is_show_all_vertex_color_fill: BoolProperty(default=False)
     is_collapse_other: BoolProperty(default=True)
     is_collapse_strokes: BoolProperty(default=True)
     is_collapse_points: BoolProperty(default=True)
