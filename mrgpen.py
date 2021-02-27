@@ -196,6 +196,10 @@ def gen_selected_strokes(layers):
         if s["stroke"].select
     )
 
+def get_selected_strokes(layers):
+    """選択中のストロークのリストを返す"""
+    return sorted(gen_selected_strokes(layers), key=lambda x:x["stroke"].select_index)
+
 def gen_selected_layers(layers):
     """選択中のストロークのレイヤーを返す"""
     for l in layers:
@@ -448,7 +452,7 @@ class MRGPEN_OT_select_layer(bpy.types.Operator):
         layers = data.layers
 
         # 先頭1件をアクティブにする
-        for x in gen_selected_points(layers):
+        for x in get_selected_strokes(layers):
             layers.active = x["layer"]
             break
 
