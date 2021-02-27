@@ -202,7 +202,12 @@ def get_selected_strokes(layers):
 def gen_selected_layers(layers):
     """選択中のストロークのレイヤーを返す"""
     for l in layers:
-        for s in (s for f in l.frames for s in f.strokes if s.select):
+        if l.lock:
+            # ロック中レイヤーは除外
+            continue
+
+        g = (s for s in l.active_frame.strokes if s.select)
+        for s in g:
             yield l
             break
 
