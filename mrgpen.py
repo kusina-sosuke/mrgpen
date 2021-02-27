@@ -157,12 +157,11 @@ def gen_strokes(layers):
     yield from (
         {
             "layer": l,
-            "frame": f,
+            "frame": l.active_frame,
             "stroke": s,
         }
         for l in layers
-        for f in l.frames
-        for s in f.strokes
+        for s in l.active_frame.strokes
     )
 
 def gen_points(layers):
