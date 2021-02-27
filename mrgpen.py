@@ -154,14 +154,18 @@ translation_dict = {
 
 def gen_strokes(layers):
     """全ストロークを返す"""
+    materials = layers.data.materials
+
     yield from (
         {
             "layer": l,
             "frame": l.active_frame,
             "stroke": s,
         }
-        for l in layers if not l.lock
+        for l in layers
+        if not l.lock
         for s in l.active_frame.strokes
+        if not materials[s.material_index].grease_pencil.lock
     )
 
 def gen_points(layers):
@@ -201,12 +205,18 @@ def get_selected_strokes(layers):
 
 def gen_selected_layers(layers):
     """選択中のストロークのレイヤーを返す"""
+    materials = layers.data.materials
+
     for l in layers:
         if l.lock:
             # ロック中レイヤーは除外
             continue
 
-        g = (s for s in l.active_frame.strokes if s.select)
+        g = (
+            s
+            for s in l.active_frame.strokes
+            if s.select and not materials[s.material_index].grease_pencil.lock
+        )
         for s in g:
             yield l
             break
