@@ -160,7 +160,7 @@ def gen_strokes(layers):
             "frame": l.active_frame,
             "stroke": s,
         }
-        for l in layers
+        for l in layers if not l.lock
         for s in l.active_frame.strokes
     )
 
